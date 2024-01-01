@@ -1,0 +1,194 @@
+definitions:
+  ErrorResponse:
+    properties:
+      error:
+        type: string
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  MessageResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  PaginateResult-Transaction:
+    properties:
+      current_page:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/Transaction'
+        type: array
+      from:
+        type: integer
+      last_page:
+        type: integer
+      per_page:
+        type: integer
+      to:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ResultResponse-PaginateResult-Transaction:
+    properties:
+      result:
+        $ref: '#/definitions/PaginateResult-Transaction'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-Transaction:
+    properties:
+      result:
+        $ref: '#/definitions/Transaction'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  Transaction:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      ref_code:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  TransactionCreatePayload:
+    properties:
+      ref_code:
+        type: string
+    required:
+    - ref_code
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: FundO API
+  version: "1.0"
+paths:
+  /hello:
+    get:
+      description: Health checking for the service
+      operationId: GetHelloMessageHandler
+      parameters:
+      - description: name of the active user
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MessageResponse'
+      summary: Health Check
+      tags:
+      - healthcheck
+  /transactions:
+    get:
+      description: Get list of transactions
+      operationId: ListTransactions
+      parameters:
+      - description: number of page
+        in: query
+        name: page
+        type: integer
+      - description: size of data per page
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-PaginateResult-Transaction'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Transaction
+      tags:
+      - transasctions
+    post:
+      description: Create transaction with reference code
+      operationId: CreateTransaction
+      parameters:
+      - description: Transaction data to be created
+        in: body
+        name: Transaction
+        required: true
+        schema:
+          $ref: '#/definitions/TransactionCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Transaction'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create Transaction
+      tags:
+      - transasctions
+  /transactions/{id}:
+    get:
+      description: Get transaction by id
+      operationId: GetTransaction
+      parameters:
+      - description: reference code of transaction
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Transaction'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Transaction
+      tags:
+      - transasctions
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

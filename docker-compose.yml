@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: gin-gorm-boilerplate
+    ports:
+      - 5432:5432
