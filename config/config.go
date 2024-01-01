@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/danyouknowme/gin-gorm-boilerplate/cmd/api/server"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource"
+	"fund-o/api-server/cmd/api/server"
+	"fund-o/api-server/internal/datasource"
+
 	"github.com/spf13/viper"
 )
 

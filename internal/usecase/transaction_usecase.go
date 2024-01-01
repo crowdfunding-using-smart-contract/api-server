@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource/repository"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/entity"
-	"github.com/danyouknowme/gin-gorm-boilerplate/pkg/pagination"
+	"fund-o/api-server/internal/datasource/repository"
+	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/pkg/pagination"
 )
 
 type TransactionUsecase interface {

@@ -1,4 +1,4 @@
-module github.com/danyouknowme/gin-gorm-boilerplate
+module fund-o/api-server
 
 go 1.20
 

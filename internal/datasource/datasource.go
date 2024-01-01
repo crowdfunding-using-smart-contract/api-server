@@ -1,7 +1,8 @@
 package datasource
 
 import (
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource/driver"
+	"fund-o/api-server/internal/datasource/driver"
+
 	logger "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

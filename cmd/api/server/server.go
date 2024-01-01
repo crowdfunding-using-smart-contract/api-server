@@ -9,17 +9,19 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource/repository"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/http/handler"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/http/middleware"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/usecase"
+	"fund-o/api-server/internal/datasource"
+	"fund-o/api-server/internal/datasource/repository"
+	"fund-o/api-server/internal/http/handler"
+	"fund-o/api-server/internal/http/middleware"
+	"fund-o/api-server/internal/usecase"
+
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
 
 	cors "github.com/rs/cors/wrapper/gin"
 
-	docs "github.com/danyouknowme/gin-gorm-boilerplate/docs"
+	docs "fund-o/api-server/docs"
+
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )

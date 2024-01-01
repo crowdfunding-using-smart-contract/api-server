@@ -7,8 +7,8 @@ package mock_repository
 import (
 	reflect "reflect"
 
-	entity "github.com/danyouknowme/gin-gorm-boilerplate/internal/entity"
-	pagination "github.com/danyouknowme/gin-gorm-boilerplate/pkg/pagination"
+	entity "fund-o/api-server/internal/entity"
+	pagination "fund-o/api-server/pkg/pagination"
 	gomock "github.com/golang/mock/gomock"
 )
 

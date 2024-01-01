@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	mockRepository "github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource/repository/mock"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/entity"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/http/handler"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/usecase"
+	mockRepository "fund-o/api-server/internal/datasource/repository/mock"
+	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/internal/http/handler"
+	"fund-o/api-server/internal/usecase"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

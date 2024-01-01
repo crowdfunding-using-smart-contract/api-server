@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/danyouknowme/gin-gorm-boilerplate/cmd/api/server"
-	"github.com/danyouknowme/gin-gorm-boilerplate/config"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/datasource"
-	"github.com/danyouknowme/gin-gorm-boilerplate/pkg/logger"
+	"fund-o/api-server/cmd/api/server"
+	"fund-o/api-server/config"
+	"fund-o/api-server/internal/datasource"
+	"fund-o/api-server/pkg/logger"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )

@@ -3,7 +3,8 @@ package driver
 import (
 	"fmt"
 
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/entity"
+	"fund-o/api-server/internal/entity"
+
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

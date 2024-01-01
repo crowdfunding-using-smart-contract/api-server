@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/http/handler"
+	"fund-o/api-server/internal/http/handler"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

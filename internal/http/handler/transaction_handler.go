@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/entity"
-	"github.com/danyouknowme/gin-gorm-boilerplate/internal/usecase"
-	"github.com/danyouknowme/gin-gorm-boilerplate/pkg/pagination"
+	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/internal/usecase"
+	"fund-o/api-server/pkg/pagination"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
