@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"fmt"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 )
@@ -26,7 +25,6 @@ func NewSessionUsecase(options *SessionUsecaseOptions) SessionUsecase {
 }
 
 func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*entity.Session, error) {
-	fmt.Println("payload: ", payload)
 	session := entity.Session{
 		ID:           payload.ID,
 		UserID:       payload.UserID,
