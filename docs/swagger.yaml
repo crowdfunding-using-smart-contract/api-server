@@ -54,6 +54,24 @@ definitions:
       status_code:
         type: integer
     type: object
+  ResultResponse-User:
+    properties:
+      result:
+        $ref: '#/definitions/User'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-UserLoginResponse:
+    properties:
+      result:
+        $ref: '#/definitions/UserLoginResponse'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   Transaction:
     properties:
       created_at:
@@ -72,6 +90,67 @@ definitions:
     required:
     - ref_code
     type: object
+  User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      profile_image:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  UserCreatePayload:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - role
+    type: object
+  UserLoginPayload:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  UserLoginResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expired_at:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expired_at:
+        type: string
+      session_id:
+        type: string
+      user:
+        $ref: '#/definitions/User'
+    type: object
 info:
   contact:
     email: support@swagger.io
@@ -85,6 +164,64 @@ info:
   title: FundO API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      description: Authenticate user with email and password
+      operationId: Login
+      parameters:
+      - description: User data to be authenticated
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/UserLoginPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-UserLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Authenticate User
+      tags:
+      - auth
+  /auth/register:
+    post:
+      description: Create user with specific user data and role
+      operationId: Register
+      parameters:
+      - description: User data to be created
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/UserCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Register User
+      tags:
+      - auth
   /hello:
     get:
       description: Health checking for the service

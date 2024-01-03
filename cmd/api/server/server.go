@@ -14,6 +14,7 @@ import (
 	"fund-o/api-server/internal/http/handler"
 	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/internal/usecase"
+	"fund-o/api-server/pkg/token"
 
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
@@ -92,17 +93,36 @@ func (server *apiServer) Start() error {
 }
 
 func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Engine {
+	// Makers
+	jwtMaker, err := token.NewJWTMaker(config.JWT_SECRET_KEY)
+	if err != nil {
+		logger.Fatalf("Failed to create JWT maker: %v", err)
+	}
+
 	// Repositories
 	transactionRepository := repository.NewTransactionRepository(datasources.GetSqlDB())
+	userRepository := repository.NewUserRepository(datasources.GetSqlDB())
+	sessionRepository := repository.NewSessionRepository(datasources.GetSqlDB())
 
 	// Usecases
 	transactionUsecase := usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
 		TransactionRepository: transactionRepository,
 	})
+	userUsecase := usecase.NewUserUsecase(&usecase.UserUsecaseOptions{
+		UserRepository: userRepository,
+	})
+	sessionUsecase := usecase.NewSessionUsecase(&usecase.SessionUsecaseOptions{
+		SessionRepository: sessionRepository,
+	})
 
 	// Handlers
 	transactionHandler := handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
 		TransactionUsecase: transactionUsecase,
+	})
+	authHandler := handler.NewAuthHandler(&handler.AuthHandlerOptions{
+		UserUsecase:    userUsecase,
+		SessionUsecase: sessionUsecase,
+		TokenMaker:     jwtMaker,
 	})
 
 	router := gin.New()
@@ -128,6 +148,12 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		transactionRoute.GET("", transactionHandler.ListTransactions)
 		transactionRoute.GET("/:id", transactionHandler.GetTransaction)
 		transactionRoute.POST("", transactionHandler.CreateTransaction)
+	}
+
+	authRoute := routeV1.Group("/auth")
+	{
+		authRoute.POST("/register", authHandler.Register)
+		authRoute.POST("/login", authHandler.Login)
 	}
 
 	return router

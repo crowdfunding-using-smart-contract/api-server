@@ -76,6 +76,8 @@ func (sql *sqlContext) Connect() error {
 
 	if err := sql.db.AutoMigrate(
 		&entity.Transaction{},
+		&entity.User{},
+		&entity.Session{},
 	); err != nil {
 		return err
 	}

@@ -12,4 +12,5 @@ type ApiServerConfig struct {
 	APP_CORS_MAX_AGE             int    `mapstructure:"APP_CORS_MAX_AGE"`
 	APP_READ_ONLY                bool   `mapstructure:"APP_READ_ONLY"`
 	LOG_REQUEST                  bool   `mapstructure:"LOG_REQUEST"`
+	JWT_SECRET_KEY               string `mapstructure:"JWT_SECRET_KEY"`
 }
