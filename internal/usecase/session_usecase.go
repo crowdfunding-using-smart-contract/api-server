@@ -3,11 +3,13 @@ package usecase
 import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
+
+	"github.com/google/uuid"
 )
 
 type SessionUsecase interface {
 	CreateSession(payload *entity.SessionCreatePayload) (*entity.Session, error)
-	GetSessionByID(sessionID string) (*entity.Session, error)
+	GetSessionByID(sessionID uuid.UUID) (*entity.Session, error)
 }
 
 type sessionUsecase struct {
@@ -42,6 +44,6 @@ func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*
 	return newSession, nil
 }
 
-func (uc *sessionUsecase) GetSessionByID(sessionID string) (*entity.Session, error) {
+func (uc *sessionUsecase) GetSessionByID(sessionID uuid.UUID) (*entity.Session, error) {
 	return uc.sessionRepository.FindByID(sessionID)
 }

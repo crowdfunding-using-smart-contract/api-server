@@ -3,13 +3,14 @@ package repository
 import (
 	"fund-o/api-server/internal/entity"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type SessionRepository interface {
 	Create(session *entity.Session) (*entity.Session, error)
-	FindByID(id string) (*entity.Session, error)
+	FindByID(id uuid.UUID) (*entity.Session, error)
 }
 
 type sessionRepository struct {
@@ -33,7 +34,7 @@ func (repo *sessionRepository) Create(session *entity.Session) (*entity.Session,
 	return session, nil
 }
 
-func (repo *sessionRepository) FindByID(id string) (*entity.Session, error) {
+func (repo *sessionRepository) FindByID(id uuid.UUID) (*entity.Session, error) {
 	var session entity.Session
 	if result := repo.db.Where("id = ?", id).First(&session); result.Error != nil {
 		repo.logger.Errorf("Failed to find session by id: %v", result.Error)

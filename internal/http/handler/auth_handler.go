@@ -125,3 +125,79 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	c.JSON(makeHttpResponse(http.StatusOK, response))
 }
+
+type RenewAccessTokenPayload struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type RenewAccessTokenResponse struct {
+	AccessToken          string    `json:"access_token"`
+	AccessTokenExpiredAt time.Time `json:"access_token_expired_at"`
+}
+
+// RenewAccessToken godoc
+// @summary Renew Access Token
+// @description Renew access token with refresh token
+// @tags auth
+// @id RenewAccessToken
+// @accpet json
+// @produce json
+// @param User body handler.RenewAccessTokenPayload true "Refresh token to be renewed"
+// @response 200 {object} handler.ResultResponse[handler.RenewAccessTokenResponse] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/renew-token [post]
+func (h *AuthHandler) RenewAccessToken(c *gin.Context) {
+	var req RenewAccessTokenPayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	refreshTokenPayload, err := h.tokenMaker.VerifyToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+	}
+
+	session, err := h.sessionUsecase.GetSessionByID(refreshTokenPayload.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(makeHttpErrorResponse(http.StatusNotFound, err.Error()))
+			return
+		}
+
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	if session.IsBlocked {
+		err := fmt.Errorf("blocked session")
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	if session.UserID != refreshTokenPayload.UserID {
+		err := fmt.Errorf("mismatch session token")
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	if time.Now().After(session.ExpiredAt) {
+		err := fmt.Errorf("session expired")
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	accessToken, accessTokenPayload, err := h.tokenMaker.CreateToken(refreshTokenPayload.UserID, 15*time.Minute)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
+		return
+	}
+
+	response := RenewAccessTokenResponse{
+		AccessToken:          accessToken,
+		AccessTokenExpiredAt: accessTokenPayload.ExpiredAt,
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, response))
+}

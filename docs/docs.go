@@ -112,6 +112,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/renew-token": {
+            "post": {
+                "description": "Renew access token with refresh token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Renew Access Token",
+                "operationId": "RenewAccessToken",
+                "parameters": [
+                    {
+                        "description": "Refresh token to be renewed",
+                        "name": "User",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handler.RenewAccessTokenPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-internal_http_handler_RenewAccessTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/hello": {
             "get": {
                 "description": "Health checking for the service",
@@ -375,6 +419,20 @@ const docTemplate = `{
                 }
             }
         },
+        "ResultResponse-internal_http_handler_RenewAccessTokenResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/internal_http_handler.RenewAccessTokenResponse"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
         "Transaction": {
             "type": "object",
             "properties": {
@@ -491,6 +549,28 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "internal_http_handler.RenewAccessTokenPayload": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_http_handler.RenewAccessTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "access_token_expired_at": {
+                    "type": "string"
                 }
             }
         }

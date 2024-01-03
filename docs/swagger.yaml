@@ -72,6 +72,15 @@ definitions:
       status_code:
         type: integer
     type: object
+  ResultResponse-internal_http_handler_RenewAccessTokenResponse:
+    properties:
+      result:
+        $ref: '#/definitions/internal_http_handler.RenewAccessTokenResponse'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   Transaction:
     properties:
       created_at:
@@ -151,6 +160,20 @@ definitions:
       user:
         $ref: '#/definitions/User'
     type: object
+  internal_http_handler.RenewAccessTokenPayload:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  internal_http_handler.RenewAccessTokenResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expired_at:
+        type: string
+    type: object
 info:
   contact:
     email: support@swagger.io
@@ -220,6 +243,35 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Register User
+      tags:
+      - auth
+  /auth/renew-token:
+    post:
+      description: Renew access token with refresh token
+      operationId: RenewAccessToken
+      parameters:
+      - description: Refresh token to be renewed
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handler.RenewAccessTokenPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-internal_http_handler_RenewAccessTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Renew Access Token
       tags:
       - auth
   /hello:

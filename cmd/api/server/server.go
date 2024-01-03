@@ -154,6 +154,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	{
 		authRoute.POST("/register", authHandler.Register)
 		authRoute.POST("/login", authHandler.Login)
+		authRoute.POST("/renew-token", authHandler.RenewAccessToken)
 	}
 
 	return router
