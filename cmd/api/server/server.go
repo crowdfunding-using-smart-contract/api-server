@@ -126,17 +126,18 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 
 	router := gin.New()
-	routeV1 := router.Group(config.APP_PATH_PREFIX)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{config.APP_CORS_ALLOWED_ORIGIN},
 		AllowCredentials: config.APP_CORS_ALLOWED_CREDENTIALS,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 	})
-	routeV1.Use(c)
+	router.Use(c)
 
-	routeV1.Use(middleware.RequestLogger())
-	routeV1.Use(middleware.ResponseLogger())
+	router.Use(middleware.RequestLogger())
+	router.Use(middleware.ResponseLogger())
+
+	routeV1 := router.Group(config.APP_PATH_PREFIX)
 
 	docs.SwaggerInfo.BasePath = config.APP_PATH_PREFIX
 	initSwaggerDocs(routeV1)
