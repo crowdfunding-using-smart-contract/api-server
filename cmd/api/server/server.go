@@ -124,6 +124,9 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		SessionUsecase: sessionUsecase,
 		TokenMaker:     jwtMaker,
 	})
+	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
+		UserUsecase: userUsecase,
+	})
 
 	router := gin.New()
 
@@ -156,6 +159,11 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		authRoute.POST("/register", authHandler.Register)
 		authRoute.POST("/login", authHandler.Login)
 		authRoute.POST("/renew-token", authHandler.RenewAccessToken)
+	}
+
+	userRoute := routeV1.Group("/users")
+	{
+		userRoute.GET("/me", middleware.AuthMiddleware(jwtMaker), userHandler.GetMe)
 	}
 
 	return router
