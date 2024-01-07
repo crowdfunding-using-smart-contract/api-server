@@ -28,13 +28,13 @@ type User struct {
 }
 
 type UserDto struct {
-	ID           uint   `json:"id"`
-	Email        string `json:"email"`
-	FullName     string `json:"full_name"`
-	ProfileImage string `json:"profile_image"`
-	Role         string `json:"role"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID           uint     `json:"id"`
+	Email        string   `json:"email"`
+	FullName     string   `json:"full_name"`
+	ProfileImage string   `json:"profile_image"`
+	Role         UserRole `json:"role"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
 } // @name User
 
 // Secondary types
@@ -69,7 +69,7 @@ func (u *User) ToUserDto() *UserDto {
 		Email:        u.Email,
 		FullName:     fmt.Sprintf("%s %s", u.FirstName, u.LastName),
 		ProfileImage: u.ProfileImage,
-		Role:         u.Role.String(),
+		Role:         u.Role,
 		CreatedAt:    u.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:    u.UpdatedAt.Format(time.RFC3339),
 	}

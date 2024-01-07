@@ -10,6 +10,7 @@ import (
 type UserRepository interface {
 	Create(user *entity.User) (*entity.User, error)
 	FindByEmail(email string) (*entity.User, error)
+	FindById(id uint) (*entity.User, error)
 }
 
 type userRepository struct {
@@ -37,6 +38,16 @@ func (repo *userRepository) FindByEmail(email string) (*entity.User, error) {
 	var user entity.User
 	if result := repo.db.Where("email = ?", email).First(&user); result.Error != nil {
 		repo.logger.Errorf("Failed to find user by email: %v", result.Error)
+		return nil, result.Error
+	}
+
+	return &user, nil
+}
+
+func (repo *userRepository) FindById(id uint) (*entity.User, error) {
+	var user entity.User
+	if result := repo.db.First(&user, id); result.Error != nil {
+		repo.logger.Errorf("Failed to find user by id: %v", result.Error)
 		return nil, result.Error
 	}
 
