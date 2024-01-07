@@ -9,6 +9,7 @@ import (
 type UserUsecase interface {
 	CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error)
 	AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error)
+	GetUserById(id uint) (*entity.UserDto, error)
 }
 
 type userUsecase struct {
@@ -54,6 +55,15 @@ func (uc *userUsecase) AuthenticateUser(payload *entity.UserLoginPayload) (*enti
 	}
 
 	if err := password.CheckPassword(payload.Password, user.HashedPassword); err != nil {
+		return nil, err
+	}
+
+	return user.ToUserDto(), nil
+}
+
+func (uc *userUsecase) GetUserById(id uint) (*entity.UserDto, error) {
+	user, err := uc.userRepository.FindById(id)
+	if err != nil {
 		return nil, err
 	}
 

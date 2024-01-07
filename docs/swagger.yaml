@@ -112,7 +112,7 @@ definitions:
       profile_image:
         type: string
       role:
-        type: string
+        $ref: '#/definitions/internal_entity.UserRole'
       updated_at:
         type: string
     type: object
@@ -160,6 +160,14 @@ definitions:
       user:
         $ref: '#/definitions/User'
     type: object
+  internal_entity.UserRole:
+    enum:
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - Backer
+    - Creator
   internal_http_handler.RenewAccessTokenPayload:
     properties:
       refresh_token:
@@ -372,6 +380,30 @@ paths:
       summary: Get Transaction
       tags:
       - transasctions
+  /users/me:
+    get:
+      description: Get current user by validating authorization token
+      operationId: GetMe
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-User'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get current user
+      tags:
+      - users
 schemes:
 - http
 - https
