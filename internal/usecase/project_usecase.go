@@ -5,6 +5,7 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -30,7 +31,9 @@ func NewProjectUsecase(options *ProjectUsecaseOptions) ProjectUsecase {
 }
 
 func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {
-	user, err := uc.userRepository.FindById(project.OwnerID)
+	ownerID := uuid.MustParse(project.OwnerID)
+
+	user, err := uc.userRepository.FindById(ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +49,7 @@ func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*
 		Image:         project.Image,
 		TargetAmount:  project.TargetAmount,
 		CurrentAmount: decimal.NewFromInt(0),
-		OwnerID:       project.OwnerID,
+		OwnerID:       ownerID,
 	}
 	newProject, err := uc.projectRepository.Create(payload)
 	if err != nil {

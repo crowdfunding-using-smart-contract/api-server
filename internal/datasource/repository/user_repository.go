@@ -3,6 +3,7 @@ package repository
 import (
 	"fund-o/api-server/internal/entity"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -10,7 +11,7 @@ import (
 type UserRepository interface {
 	Create(user *entity.User) (*entity.User, error)
 	FindByEmail(email string) (*entity.User, error)
-	FindById(id uint) (*entity.User, error)
+	FindById(id uuid.UUID) (*entity.User, error)
 }
 
 type userRepository struct {
@@ -44,7 +45,7 @@ func (repo *userRepository) FindByEmail(email string) (*entity.User, error) {
 	return &user, nil
 }
 
-func (repo *userRepository) FindById(id uint) (*entity.User, error) {
+func (repo *userRepository) FindById(id uuid.UUID) (*entity.User, error) {
 	var user entity.User
 	if result := repo.db.First(&user, id); result.Error != nil {
 		repo.logger.Errorf("Failed to find user by id: %v", result.Error)

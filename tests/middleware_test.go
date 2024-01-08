@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -28,6 +29,8 @@ func (s *MiddlewareSuite) SetupTest() {
 }
 
 func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
+	userID := uuid.New().String()
+
 	testCases := []struct {
 		name          string
 		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
@@ -36,7 +39,7 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 		{
 			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				s.addAuthorization(t, request, middleware.AuthorizationTypeBearer, 1, time.Minute)
+				s.addAuthorization(t, request, middleware.AuthorizationTypeBearer, userID, time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -52,7 +55,7 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 		{
 			name: "UnsupportedAuthorization",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				s.addAuthorization(t, request, "unsupported", 1, time.Minute)
+				s.addAuthorization(t, request, "unsupported", userID, time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -61,7 +64,7 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 		{
 			name: "InvalidAuthorizationFormat",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				s.addAuthorization(t, request, "", 1, time.Minute)
+				s.addAuthorization(t, request, "", userID, time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -70,7 +73,7 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 		{
 			name: "ExpiredToken",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				s.addAuthorization(t, request, middleware.AuthorizationTypeBearer, 1, -time.Minute)
+				s.addAuthorization(t, request, middleware.AuthorizationTypeBearer, userID, -time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -107,7 +110,7 @@ func (s *MiddlewareSuite) addAuthorization(
 	t *testing.T,
 	request *http.Request,
 	authorizationType string,
-	userID uint,
+	userID string,
 	duration time.Duration,
 ) {
 	token, payload, err := s.tokenMaker.CreateToken(userID, duration)

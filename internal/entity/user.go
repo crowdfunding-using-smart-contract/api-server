@@ -5,9 +5,6 @@ import (
 	"time"
 
 	"fund-o/api-server/pkg/helper"
-
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type UserRole int
@@ -18,7 +15,7 @@ const (
 )
 
 type User struct {
-	gorm.Model
+	Base
 	Email          string `gorm:"not null;uniqueIndex"`
 	HashedPassword string `gorm:"not null"`
 	FirstName      string `gorm:"not null"`
@@ -28,7 +25,7 @@ type User struct {
 }
 
 type UserDto struct {
-	ID           uint     `json:"id"`
+	ID           string   `json:"id"`
 	Email        string   `json:"email"`
 	FullName     string   `json:"full_name"`
 	ProfileImage string   `json:"profile_image"`
@@ -53,7 +50,7 @@ type UserLoginPayload struct {
 } // @name UserLoginPayload
 
 type UserLoginResponse struct {
-	SessionID             uuid.UUID `json:"session_id"`
+	SessionID             string    `json:"session_id"`
 	AccessToken           string    `json:"access_token"`
 	AccessTokenExpiredAt  time.Time `json:"access_token_expired_at"`
 	RefreshToken          string    `json:"refresh_token"`
@@ -65,7 +62,7 @@ type UserLoginResponse struct {
 
 func (u *User) ToUserDto() *UserDto {
 	return &UserDto{
-		ID:           u.ID,
+		ID:           u.ID.String(),
 		Email:        u.Email,
 		FullName:     fmt.Sprintf("%s %s", u.FirstName, u.LastName),
 		ProfileImage: u.ProfileImage,

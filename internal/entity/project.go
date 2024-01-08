@@ -3,6 +3,7 @@ package entity
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -23,7 +24,7 @@ type Project struct {
 	Image         string
 	TargetAmount  decimal.Decimal `gorm:"type:numeric"`
 	CurrentAmount decimal.Decimal `gorm:"type:numeric"`
-	OwnerID       uint            `gorm:"not null"`
+	OwnerID       uuid.UUID       `gorm:"not null"`
 	Owner         User            `gorm:"foreignKey:OwnerID"`
 }
 
@@ -35,7 +36,7 @@ type ProjectDto struct {
 	TargetAmount  decimal.Decimal `json:"target_amount"`
 	CurrentAmount decimal.Decimal `json:"current_amount"`
 	Owner         *UserDto        `json:"owner"`
-	CreatedAt     time.Time       `json:"created_at"`
+	CreatedAt     string          `json:"created_at"`
 } // @name Project
 
 // Secondary types
@@ -45,7 +46,7 @@ type ProjectCreatePayload struct {
 	Description  string          `json:"description" binding:"required"`
 	Image        string          `json:"image"`
 	TargetAmount decimal.Decimal `json:"target_amount" binding:"required"`
-	OwnerID      uint
+	OwnerID      string
 }
 
 // Parse functions
@@ -59,6 +60,6 @@ func (p *Project) ToProjectDto() *ProjectDto {
 		TargetAmount:  p.TargetAmount,
 		CurrentAmount: p.CurrentAmount,
 		Owner:         p.Owner.ToUserDto(),
-		CreatedAt:     p.CreatedAt,
+		CreatedAt:     p.CreatedAt.Format(time.RFC3339),
 	}
 }

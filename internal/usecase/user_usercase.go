@@ -4,12 +4,14 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/password"
+
+	"github.com/google/uuid"
 )
 
 type UserUsecase interface {
 	CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error)
 	AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error)
-	GetUserById(id uint) (*entity.UserDto, error)
+	GetUserById(id string) (*entity.UserDto, error)
 }
 
 type userUsecase struct {
@@ -61,8 +63,10 @@ func (uc *userUsecase) AuthenticateUser(payload *entity.UserLoginPayload) (*enti
 	return user.ToUserDto(), nil
 }
 
-func (uc *userUsecase) GetUserById(id uint) (*entity.UserDto, error) {
-	user, err := uc.userRepository.FindById(id)
+func (uc *userUsecase) GetUserById(id string) (*entity.UserDto, error) {
+	userID := uuid.MustParse(id)
+
+	user, err := uc.userRepository.FindById(userID)
 	if err != nil {
 		return nil, err
 	}
