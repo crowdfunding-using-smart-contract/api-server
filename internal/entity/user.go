@@ -58,7 +58,7 @@ type UserLoginResponse struct {
 	AccessTokenExpiredAt  time.Time `json:"access_token_expired_at"`
 	RefreshToken          string    `json:"refresh_token"`
 	RefreshTokenExpiredAt time.Time `json:"refresh_token_expired_at"`
-	User                  *UserDto  `json:"user"`
+	User                  UserDto   `json:"user"`
 } // @name UserLoginResponse
 
 // Parse functions
