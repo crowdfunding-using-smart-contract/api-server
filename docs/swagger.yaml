@@ -36,10 +36,38 @@ definitions:
       total:
         type: integer
     type: object
+  Project:
+    properties:
+      created_at:
+        type: string
+      current_amount:
+        type: number
+      description:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      owner:
+        $ref: '#/definitions/User'
+      target_amount:
+        type: number
+      title:
+        type: string
+    type: object
   ResultResponse-PaginateResult-Transaction:
     properties:
       result:
         $ref: '#/definitions/PaginateResult-Transaction'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-Project:
+    properties:
+      result:
+        $ref: '#/definitions/Project'
       status:
         type: string
       status_code:
@@ -108,7 +136,7 @@ definitions:
       full_name:
         type: string
       id:
-        type: integer
+        type: string
       profile_image:
         type: string
       role:
@@ -160,6 +188,31 @@ definitions:
       user:
         $ref: '#/definitions/User'
     type: object
+  fund-o_api-server_internal_entity.ProjectCreatePayload:
+    properties:
+      description:
+        type: string
+      image:
+        type: string
+      ownerID:
+        type: string
+      target_amount:
+        type: number
+      title:
+        type: string
+    required:
+    - description
+    - target_amount
+    - title
+    type: object
+  fund-o_api-server_internal_entity.UserRole:
+    enum:
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - Backer
+    - Creator
   internal_entity.UserRole:
     enum:
     - 1
@@ -301,6 +354,37 @@ paths:
       summary: Health Check
       tags:
       - healthcheck
+  /projects:
+    post:
+      description: Create project with required data
+      operationId: CreateProject
+      parameters:
+      - description: Project data to be created
+        in: body
+        name: Project
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.ProjectCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Project
+      tags:
+      - projects
   /transactions:
     get:
       description: Get list of transactions

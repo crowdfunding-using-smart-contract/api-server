@@ -181,6 +181,55 @@
                 }
             }
         },
+        "/projects": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create project with required data",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Create Project",
+                "operationId": "CreateProject",
+                "parameters": [
+                    {
+                        "description": "Project data to be created",
+                        "name": "Project",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.ProjectCreatePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/transactions": {
             "get": {
                 "description": "Get list of transactions",
@@ -397,11 +446,54 @@
                 }
             }
         },
+        "Project": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "current_amount": {
+                    "type": "number"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "owner": {
+                    "$ref": "#/definitions/User"
+                },
+                "target_amount": {
+                    "type": "number"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "ResultResponse-PaginateResult-Transaction": {
             "type": "object",
             "properties": {
                 "result": {
                     "$ref": "#/definitions/PaginateResult-Transaction"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-Project": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/Project"
                 },
                 "status": {
                     "type": "string"
@@ -508,7 +600,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "profile_image": {
                     "type": "string"
@@ -585,6 +677,42 @@
                     "$ref": "#/definitions/User"
                 }
             }
+        },
+        "fund-o_api-server_internal_entity.ProjectCreatePayload": {
+            "type": "object",
+            "required": [
+                "description",
+                "target_amount",
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "ownerID": {
+                    "type": "string"
+                },
+                "target_amount": {
+                    "type": "number"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.UserRole": {
+            "type": "integer",
+            "enum": [
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "Backer",
+                "Creator"
+            ]
         },
         "internal_entity.UserRole": {
             "type": "integer",

@@ -25,6 +25,19 @@ func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 	}
 }
 
+// CreateProject godoc
+// @summary Create Project
+// @description Create project with required data
+// @tags projects
+// @id CreateProject
+// @accpet json
+// @produce json
+// @security ApiKeyAuth
+// @param Project body entity.ProjectCreatePayload true "Project data to be created"
+// @response 200 {object} handler.ResultResponse[entity.ProjectDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects [post]
 func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
 
