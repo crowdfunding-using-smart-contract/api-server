@@ -120,7 +120,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		AccessTokenExpiredAt:  accessTokenPayload.ExpiredAt,
 		RefreshToken:          refreshToken,
 		RefreshTokenExpiredAt: refreshTokenPayload.ExpiredAt,
-		User:                  *user,
+		User:                  user,
 	}
 
 	c.JSON(makeHttpResponse(http.StatusOK, response))
