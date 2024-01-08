@@ -22,8 +22,8 @@ type Project struct {
 	Title         string `gorm:"type:varchar(255);not null"`
 	Description   string `gorm:"not null"`
 	Image         string
-	TargetAmount  decimal.Decimal `gorm:"type:numeric"`
-	CurrentAmount decimal.Decimal `gorm:"type:numeric"`
+	TargetAmount  decimal.Decimal `gorm:"type:decimal(32,16)"`
+	CurrentAmount decimal.Decimal `gorm:"type:decimal(32,16)"`
 	OwnerID       uuid.UUID       `gorm:"not null"`
 	Owner         User            `gorm:"foreignKey:OwnerID"`
 }
