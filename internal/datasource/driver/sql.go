@@ -78,6 +78,7 @@ func (sql *sqlContext) Connect() error {
 		&entity.Transaction{},
 		&entity.User{},
 		&entity.Session{},
+		&entity.Project{},
 	); err != nil {
 		return err
 	}
