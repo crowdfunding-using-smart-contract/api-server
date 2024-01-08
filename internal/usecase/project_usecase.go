@@ -56,6 +56,8 @@ func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*
 		return nil, err
 	}
 
+	newProject.Owner = *user
+
 	return newProject.ToProjectDto(), nil
 
 }
