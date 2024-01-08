@@ -103,6 +103,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	transactionRepository := repository.NewTransactionRepository(datasources.GetSqlDB())
 	userRepository := repository.NewUserRepository(datasources.GetSqlDB())
 	sessionRepository := repository.NewSessionRepository(datasources.GetSqlDB())
+	projectRepository := repository.NewProjectRepository(datasources.GetSqlDB())
 
 	// Usecases
 	transactionUsecase := usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
@@ -113,6 +114,10 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	sessionUsecase := usecase.NewSessionUsecase(&usecase.SessionUsecaseOptions{
 		SessionRepository: sessionRepository,
+	})
+	projectUsecase := usecase.NewProjectUsecase(&usecase.ProjectUsecaseOptions{
+		ProjectRepository: projectRepository,
+		UserRepository:    userRepository,
 	})
 
 	// Handlers
@@ -126,6 +131,9 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
 		UserUsecase: userUsecase,
+	})
+	projectHandler := handler.NewProjectHandler(&handler.ProjectHandlerOptions{
+		ProjectUsecase: projectUsecase,
 	})
 
 	router := gin.New()
@@ -164,6 +172,11 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	userRoute := routeV1.Group("/users")
 	{
 		userRoute.GET("/me", middleware.AuthMiddleware(jwtMaker), userHandler.GetMe)
+	}
+
+	projectRoute := routeV1.Group("/projects")
+	{
+		projectRoute.POST("", middleware.AuthMiddleware(jwtMaker), projectHandler.CreateProject)
 	}
 
 	return router
