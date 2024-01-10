@@ -57,3 +57,27 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 
 	c.JSON(makeHttpResponse(http.StatusCreated, projectDto))
 }
+
+// GetOwnProjects godoc
+// @summary Get own Projects
+// @description Get own projects with authenticate creator
+// @tags projects
+// @id GetOwnProjects
+// @accpet json
+// @produce json
+// @security ApiKeyAuth
+// @response 200 {object} handler.ResultResponse[entity.ProjectDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/own [get]
+func (h *ProjectHandler) GetOwnProjects(c *gin.Context) {
+	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+	projectDtos, err := h.projectUsecase.GetProjectsByOwnerID(userID)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project: %v", err.Error())))
+		return
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, projectDtos))
+}

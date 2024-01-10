@@ -179,6 +179,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	projectRoute := routeV1.Group("/projects")
 	{
 		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
+		projectRoute.GET("/own", authMiddleware, projectHandler.GetOwnProjects)
 	}
 
 	return router

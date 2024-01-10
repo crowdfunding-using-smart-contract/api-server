@@ -234,6 +234,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/projects/own": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get own projects with authenticate creator",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Get own Projects",
+                "operationId": "GetOwnProjects",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/transactions": {
             "get": {
                 "description": "Get list of transactions",
@@ -610,7 +648,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/internal_entity.UserRole"
+                    "$ref": "#/definitions/fund-o_api-server_internal_entity.UserRole"
                 },
                 "updated_at": {
                     "type": "string"
@@ -708,17 +746,6 @@ const docTemplate = `{
             }
         },
         "fund-o_api-server_internal_entity.UserRole": {
-            "type": "integer",
-            "enum": [
-                1,
-                2
-            ],
-            "x-enum-varnames": [
-                "Backer",
-                "Creator"
-            ]
-        },
-        "internal_entity.UserRole": {
             "type": "integer",
             "enum": [
                 1,
