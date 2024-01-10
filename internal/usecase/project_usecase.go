@@ -11,6 +11,7 @@ import (
 
 type ProjectUsecase interface {
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
+	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
 }
 
 type projectUsecase struct {
@@ -59,5 +60,20 @@ func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*
 	newProject.Owner = *user
 
 	return newProject.ToProjectDto(), nil
+}
 
+func (uc *projectUsecase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error) {
+	ownerID := uuid.MustParse(requestOwnerID)
+
+	projects, err := uc.projectRepository.FindAllByOwnerID(ownerID)
+	if err != nil {
+		return nil, err
+	}
+
+	projectDtos := make([]entity.ProjectDto, 0, len(projects))
+	for _, project := range projects {
+		projectDtos = append(projectDtos, *project.ToProjectDto())
+	}
+
+	return projectDtos, nil
 }

@@ -3,12 +3,14 @@ package repository
 import (
 	"fund-o/api-server/internal/entity"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type ProjectRepository interface {
 	Create(project *entity.Project) (*entity.Project, error)
+	FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Project, error)
 }
 
 type projectRepository struct {
@@ -30,4 +32,13 @@ func (repo *projectRepository) Create(project *entity.Project) (*entity.Project,
 	}
 
 	return project, nil
+}
+
+func (repo *projectRepository) FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Project, error) {
+	var projects []entity.Project
+	if result := repo.db.Preload("Owner").Where("owner_id = ?", ownerID).Find(&projects); result.Error != nil {
+		return nil, result.Error
+	}
+
+	return projects, nil
 }
