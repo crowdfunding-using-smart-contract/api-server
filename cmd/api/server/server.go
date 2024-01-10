@@ -117,7 +117,6 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	projectUsecase := usecase.NewProjectUsecase(&usecase.ProjectUsecaseOptions{
 		ProjectRepository: projectRepository,
-		UserRepository:    userRepository,
 	})
 
 	// Handlers
@@ -134,6 +133,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	projectHandler := handler.NewProjectHandler(&handler.ProjectHandlerOptions{
 		ProjectUsecase: projectUsecase,
+		UserUsecase:    userUsecase,
 	})
 
 	router := gin.New()

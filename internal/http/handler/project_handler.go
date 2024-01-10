@@ -13,15 +13,18 @@ import (
 
 type ProjectHandler struct {
 	projectUsecase usecase.ProjectUsecase
+	userUsecase    usecase.UserUsecase
 }
 
 type ProjectHandlerOptions struct {
 	usecase.ProjectUsecase
+	usecase.UserUsecase
 }
 
 func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 	return &ProjectHandler{
 		projectUsecase: options.ProjectUsecase,
+		userUsecase:    options.UserUsecase,
 	}
 }
 
@@ -47,13 +50,21 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		return
 	}
 
-	req.OwnerID = userID
+	user, err := h.userUsecase.GetUserById(userID)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project: %v", err.Error())))
+		return
+	}
+
+	req.OwnerID = user.ID
 
 	projectDto, err := h.projectUsecase.CreateProject(&req)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project: %v", err.Error())))
 		return
 	}
+
+	projectDto.Owner = user
 
 	c.JSON(makeHttpResponse(http.StatusCreated, projectDto))
 }

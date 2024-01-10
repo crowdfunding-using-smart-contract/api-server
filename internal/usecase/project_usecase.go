@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"fmt"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 
@@ -16,33 +15,20 @@ type ProjectUsecase interface {
 
 type projectUsecase struct {
 	projectRepository repository.ProjectRepository
-	userRepository    repository.UserRepository
 }
 
 type ProjectUsecaseOptions struct {
 	repository.ProjectRepository
-	repository.UserRepository
 }
 
 func NewProjectUsecase(options *ProjectUsecaseOptions) ProjectUsecase {
 	return &projectUsecase{
 		projectRepository: options.ProjectRepository,
-		userRepository:    options.UserRepository,
 	}
 }
 
 func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {
 	ownerID := uuid.MustParse(project.OwnerID)
-
-	user, err := uc.userRepository.FindById(ownerID)
-	if err != nil {
-		return nil, err
-	}
-
-	if user.Role != entity.Creator {
-		err = fmt.Errorf("user is not a creator")
-		return nil, err
-	}
 
 	payload := &entity.Project{
 		Title:         project.Title,
@@ -56,8 +42,6 @@ func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*
 	if err != nil {
 		return nil, err
 	}
-
-	newProject.Owner = *user
 
 	return newProject.ToProjectDto(), nil
 }
