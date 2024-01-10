@@ -153,6 +153,8 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	docs.SwaggerInfo.BasePath = config.APP_PATH_PREFIX
 	initSwaggerDocs(routeV1)
 
+	authMiddleware := middleware.AuthMiddleware(jwtMaker)
+
 	// Routes
 	routeV1.GET("/hello", handler.GetHelloMessage)
 	transactionRoute := routeV1.Group("/transactions")
@@ -171,12 +173,12 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 
 	userRoute := routeV1.Group("/users")
 	{
-		userRoute.GET("/me", middleware.AuthMiddleware(jwtMaker), userHandler.GetMe)
+		userRoute.GET("/me", authMiddleware, userHandler.GetMe)
 	}
 
 	projectRoute := routeV1.Group("/projects")
 	{
-		projectRoute.POST("", middleware.AuthMiddleware(jwtMaker), projectHandler.CreateProject)
+		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
 	}
 
 	return router
