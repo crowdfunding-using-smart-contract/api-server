@@ -39,7 +39,7 @@ definitions:
   Project:
     properties:
       category:
-        $ref: '#/definitions/internal_entity.ProjectCategoryDto'
+        $ref: '#/definitions/ProjectCategory'
       created_at:
         type: string
       current_amount:
@@ -61,12 +61,30 @@ definitions:
       start_date:
         type: string
       sub_category:
-        $ref: '#/definitions/internal_entity.ProjectSubCategoryDto'
+        $ref: '#/definitions/ProjectSubCategory'
       sub_title:
         type: string
       target_amount:
         type: number
       title:
+        type: string
+    type: object
+  ProjectCategory:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      sub_categories:
+        items:
+          $ref: '#/definitions/ProjectSubCategory'
+        type: array
+    type: object
+  ProjectSubCategory:
+    properties:
+      id:
+        type: string
+      name:
         type: string
     type: object
   ResultResponse-PaginateResult-Transaction:
@@ -114,6 +132,28 @@ definitions:
       status_code:
         type: integer
     type: object
+  ResultResponse-array_Project:
+    properties:
+      result:
+        items:
+          $ref: '#/definitions/Project'
+        type: array
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-array_ProjectCategory:
+    properties:
+      result:
+        items:
+          $ref: '#/definitions/ProjectCategory'
+        type: array
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   ResultResponse-internal_http_handler_RenewAccessTokenResponse:
     properties:
       result:
@@ -154,7 +194,7 @@ definitions:
       profile_image:
         type: string
       role:
-        $ref: '#/definitions/internal_entity.UserRole'
+        $ref: '#/definitions/fund-o_api-server_internal_entity.UserRole'
       updated_at:
         type: string
     type: object
@@ -234,20 +274,14 @@ definitions:
     - target_amount
     - title
     type: object
-  internal_entity.ProjectCategoryDto:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-    type: object
-  internal_entity.ProjectSubCategoryDto:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-    type: object
+  fund-o_api-server_internal_entity.UserRole:
+    enum:
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - Backer
+    - Creator
   internal_entity.UserRole:
     enum:
     - 1
@@ -420,6 +454,24 @@ paths:
       summary: Create Project
       tags:
       - projects
+  /projects/categories:
+    get:
+      description: List project categories for selection
+      operationId: ListProjectCategories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-array_ProjectCategory'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Project Categories
+      tags:
+      - projects
   /projects/own:
     get:
       description: Get own projects with authenticate creator
@@ -430,7 +482,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ResultResponse-Project'
+            $ref: '#/definitions/ResultResponse-array_Project'
         "400":
           description: Bad Request
           schema:

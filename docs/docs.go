@@ -234,6 +234,33 @@ const docTemplate = `{
                 }
             }
         },
+        "/projects/categories": {
+            "get": {
+                "description": "List project categories for selection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "List Project Categories",
+                "operationId": "ListProjectCategories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-array_ProjectCategory"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/projects/own": {
             "get": {
                 "security": [
@@ -254,7 +281,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-Project"
+                            "$ref": "#/definitions/ResultResponse-array_Project"
                         }
                     },
                     "400": {
@@ -492,7 +519,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category": {
-                    "$ref": "#/definitions/internal_entity.ProjectCategoryDto"
+                    "$ref": "#/definitions/ProjectCategory"
                 },
                 "created_at": {
                     "type": "string"
@@ -525,7 +552,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sub_category": {
-                    "$ref": "#/definitions/internal_entity.ProjectSubCategoryDto"
+                    "$ref": "#/definitions/ProjectSubCategory"
                 },
                 "sub_title": {
                     "type": "string"
@@ -534,6 +561,34 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProjectCategory": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sub_categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProjectSubCategory"
+                    }
+                }
+            }
+        },
+        "ProjectSubCategory": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -608,6 +663,40 @@ const docTemplate = `{
                 }
             }
         },
+        "ResultResponse-array_Project": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Project"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-array_ProjectCategory": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProjectCategory"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
         "ResultResponse-internal_http_handler_RenewAccessTokenResponse": {
             "type": "object",
             "properties": {
@@ -669,7 +758,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/internal_entity.UserRole"
+                    "$ref": "#/definitions/fund-o_api-server_internal_entity.UserRole"
                 },
                 "updated_at": {
                     "type": "string"
@@ -787,27 +876,16 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_entity.ProjectCategoryDto": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_entity.ProjectSubCategoryDto": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
+        "fund-o_api-server_internal_entity.UserRole": {
+            "type": "integer",
+            "enum": [
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "Backer",
+                "Creator"
+            ]
         },
         "internal_entity.UserRole": {
             "type": "integer",

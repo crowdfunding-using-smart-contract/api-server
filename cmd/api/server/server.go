@@ -104,6 +104,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	userRepository := repository.NewUserRepository(datasources.GetSqlDB())
 	sessionRepository := repository.NewSessionRepository(datasources.GetSqlDB())
 	projectRepository := repository.NewProjectRepository(datasources.GetSqlDB())
+	projectCategoryRepository := repository.NewProjectCategoryRepository(datasources.GetSqlDB())
 
 	// Usecases
 	transactionUsecase := usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
@@ -117,6 +118,9 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	projectUsecase := usecase.NewProjectUsecase(&usecase.ProjectUsecaseOptions{
 		ProjectRepository: projectRepository,
+	})
+	projectCategoryUsecase := usecase.NewProjectCategoryUsecase(&usecase.ProjectCategoryUsecaseOptions{
+		ProjectCategoryRepository: projectCategoryRepository,
 	})
 
 	// Handlers
@@ -132,8 +136,9 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		UserUsecase: userUsecase,
 	})
 	projectHandler := handler.NewProjectHandler(&handler.ProjectHandlerOptions{
-		ProjectUsecase: projectUsecase,
-		UserUsecase:    userUsecase,
+		ProjectUsecase:         projectUsecase,
+		UserUsecase:            userUsecase,
+		ProjectCategoryUsecase: projectCategoryUsecase,
 	})
 
 	router := gin.New()
@@ -180,6 +185,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	{
 		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
 		projectRoute.GET("/own", authMiddleware, projectHandler.GetOwnProjects)
+		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
 	}
 
 	return router

@@ -12,19 +12,22 @@ import (
 )
 
 type ProjectHandler struct {
-	projectUsecase usecase.ProjectUsecase
-	userUsecase    usecase.UserUsecase
+	projectUsecase         usecase.ProjectUsecase
+	projectCategoryUsecase usecase.ProjectCategoryUsecase
+	userUsecase            usecase.UserUsecase
 }
 
 type ProjectHandlerOptions struct {
 	usecase.ProjectUsecase
+	usecase.ProjectCategoryUsecase
 	usecase.UserUsecase
 }
 
 func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 	return &ProjectHandler{
-		projectUsecase: options.ProjectUsecase,
-		userUsecase:    options.UserUsecase,
+		projectUsecase:         options.ProjectUsecase,
+		projectCategoryUsecase: options.ProjectCategoryUsecase,
+		userUsecase:            options.UserUsecase,
 	}
 }
 
@@ -77,7 +80,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 // @accpet json
 // @produce json
 // @security ApiKeyAuth
-// @response 200 {object} handler.ResultResponse[entity.ProjectDto] "OK"
+// @response 200 {object} handler.ResultResponse[[]entity.ProjectDto] "OK"
 // @response 400 {object} handler.ErrorResponse "Bad Request"
 // @response 500 {object} handler.ErrorResponse "Internal Server Error"
 // @router /projects/own [get]
@@ -91,4 +94,23 @@ func (h *ProjectHandler) GetOwnProjects(c *gin.Context) {
 	}
 
 	c.JSON(makeHttpResponse(http.StatusOK, projectDtos))
+}
+
+// ListProjectCategories godoc
+// @summary List Project Categories
+// @description List project categories for selection
+// @tags projects
+// @id ListProjectCategories
+// @produce json
+// @response 200 {object} handler.ResultResponse[[]entity.ProjectCategoryDto]
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/categories [get]
+func (h *ProjectHandler) ListProjectCategories(c *gin.Context) {
+	categories, err := h.projectCategoryUsecase.ListProjectCategories()
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error list project categories: %v", err.Error())))
+		return
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, categories))
 }
