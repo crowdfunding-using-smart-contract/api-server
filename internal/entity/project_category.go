@@ -19,12 +19,12 @@ type ProjectSubCategory struct {
 type ProjectCategoryDto struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-}
+} // @name ProjectCategory
 
 type ProjectSubCategoryDto struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-}
+} // @name ProjectSubCategoryfc3c774c-ea74-4886-a70c-05ff62cc62c0
 
 // Parse functions
 

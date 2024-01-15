@@ -491,6 +491,9 @@ const docTemplate = `{
         "Project": {
             "type": "object",
             "properties": {
+                "category": {
+                    "$ref": "#/definitions/internal_entity.ProjectCategoryDto"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -500,14 +503,32 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "end_date": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
                 "image": {
                     "type": "string"
                 },
+                "launch_date": {
+                    "type": "string"
+                },
+                "monetary_unit": {
+                    "type": "string"
+                },
                 "owner": {
                     "$ref": "#/definitions/User"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "sub_category": {
+                    "$ref": "#/definitions/internal_entity.ProjectSubCategoryDto"
+                },
+                "sub_title": {
+                    "type": "string"
                 },
                 "target_amount": {
                     "type": "number"
@@ -648,7 +669,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/fund-o_api-server_internal_entity.UserRole"
+                    "$ref": "#/definitions/internal_entity.UserRole"
                 },
                 "updated_at": {
                     "type": "string"
@@ -723,18 +744,39 @@ const docTemplate = `{
         "fund-o_api-server_internal_entity.ProjectCreatePayload": {
             "type": "object",
             "required": [
-                "description",
+                "category_id",
+                "end_date",
+                "sub_category_id",
+                "sub_title",
                 "target_amount",
                 "title"
             ],
             "properties": {
+                "category_id": {
+                    "type": "string"
+                },
                 "description": {
+                    "type": "string"
+                },
+                "end_date": {
                     "type": "string"
                 },
                 "image": {
                     "type": "string"
                 },
+                "launch_date": {
+                    "type": "string"
+                },
+                "monetary_unit": {
+                    "type": "string"
+                },
                 "ownerID": {
+                    "type": "string"
+                },
+                "sub_category_id": {
+                    "type": "string"
+                },
+                "sub_title": {
                     "type": "string"
                 },
                 "target_amount": {
@@ -745,7 +787,29 @@ const docTemplate = `{
                 }
             }
         },
-        "fund-o_api-server_internal_entity.UserRole": {
+        "internal_entity.ProjectCategoryDto": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_entity.ProjectSubCategoryDto": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_entity.UserRole": {
             "type": "integer",
             "enum": [
                 1,
