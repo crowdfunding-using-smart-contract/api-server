@@ -1,8 +1,10 @@
 package usecase
 
 import (
+	"fmt"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -30,11 +32,31 @@ func NewProjectUsecase(options *ProjectUsecaseOptions) ProjectUsecase {
 func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {
 	ownerID := uuid.MustParse(project.OwnerID)
 
+	endDate, err := time.Parse(time.RFC3339, project.EndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	var launchDate time.Time = time.Now()
+	if project.LaunchDate != "" {
+		if launchDate, err = time.Parse(time.RFC3339, project.LaunchDate); err != nil {
+			fmt.Println("Error while parsing launch date: ", err)
+			return nil, err
+		}
+	}
+
 	payload := &entity.Project{
 		Title:          project.Title,
-		Description:    project.Description,
+		SubTitle:       project.SubTitle,
+		CategoryID:     uuid.MustParse(project.CategoryID),
+		SubCategoryID:  uuid.MustParse(project.SubCategoryID),
 		Image:          project.Image,
-		TargetFunding:  project.TargetAmount,
+		Description:    project.Description,
+		TargetFunding:  project.TargetFunding,
+		MonetaryUnit:   project.MonetaryUnit,
+		StartDate:      time.Now(),
+		EndDate:        endDate,
+		LaunchDate:     launchDate,
 		CurrentFunding: decimal.NewFromInt(0),
 		OwnerID:        ownerID,
 	}

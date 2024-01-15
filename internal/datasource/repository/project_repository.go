@@ -26,7 +26,12 @@ func NewProjectRepository(db *gorm.DB) ProjectRepository {
 }
 
 func (repo *projectRepository) Create(project *entity.Project) (*entity.Project, error) {
-	if result := repo.db.Create(&project); result.Error != nil {
+	result := repo.db.
+		Preload("Category").
+		Preload("SubCategory").
+		Create(&project).
+		First(&project)
+	if result.Error != nil {
 		repo.logger.Errorf("Failed to create project: %v", result.Error)
 		return nil, result.Error
 	}
@@ -36,7 +41,13 @@ func (repo *projectRepository) Create(project *entity.Project) (*entity.Project,
 
 func (repo *projectRepository) FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Project, error) {
 	var projects []entity.Project
-	if result := repo.db.Preload("Owner").Where("owner_id = ?", ownerID).Find(&projects); result.Error != nil {
+	result := repo.db.
+		Preload("Owner").
+		Preload("Category").
+		Preload("SubCategory").
+		Where("owner_id = ?", ownerID).
+		Find(&projects)
+	if result.Error != nil {
 		return nil, result.Error
 	}
 
