@@ -7,36 +7,37 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type ProjectStatus int
-
-const (
-	Open ProjectStatus = iota + 1
-	Approved
-	Reverted
-	Deleted
-	PaidOut
-)
-
 type Project struct {
 	Base
-	Title         string `gorm:"type:varchar(255);not null"`
-	Description   string `gorm:"not null"`
-	Image         string
-	TargetAmount  decimal.Decimal `gorm:"type:decimal(32,16)"`
-	CurrentAmount decimal.Decimal `gorm:"type:decimal(32,16)"`
-	OwnerID       uuid.UUID       `gorm:"not null"`
-	Owner         User            `gorm:"foreignKey:OwnerID"`
+	Title          string          `gorm:"type:varchar(255);not null"`
+	SubTitle       string          `gorm:"not null"`
+	CategoryID     uuid.UUID       `gorm:"not null"`
+	Category       ProjectCategory `gorm:"foreignKey:CategoryID"`
+	SubCategoryID  uuid.UUID
+	SubCategory    ProjectSubCategory `gorm:"foreignKey:SubCategoryID"`
+	Image          string
+	Description    string
+	TargetFunding  decimal.Decimal `gorm:"type:decimal(32,16)"`
+	CurrentFunding decimal.Decimal `gorm:"type:decimal(32,16)"`
+	MonetaryUnit   string          `gorm:"default:'THB'"`
+	StartDate      time.Time       `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	EndDate        time.Time       `gorm:"not null"`
+	LaunchDate     time.Time
+	OwnerID        uuid.UUID `gorm:"not null"`
+	Owner          User      `gorm:"foreignKey:OwnerID"`
 }
 
 type ProjectDto struct {
-	ID            string          `json:"id"`
-	Title         string          `json:"title"`
-	Description   string          `json:"description"`
-	Image         string          `json:"image"`
-	TargetAmount  decimal.Decimal `json:"target_amount"`
-	CurrentAmount decimal.Decimal `json:"current_amount"`
-	Owner         *UserDto        `json:"owner"`
-	CreatedAt     string          `json:"created_at"`
+	ID            string              `json:"id"`
+	Title         string              `json:"title"`
+	SubTitle      string              `json:"sub_title"`
+	Category      *ProjectCategoryDto `json:"category"`
+	Description   string              `json:"description"`
+	Image         string              `json:"image"`
+	TargetAmount  decimal.Decimal     `json:"target_amount"`
+	CurrentAmount decimal.Decimal     `json:"current_amount"`
+	Owner         *UserDto            `json:"owner"`
+	CreatedAt     string              `json:"created_at"`
 } // @name Project
 
 // Secondary types
@@ -57,8 +58,8 @@ func (p *Project) ToProjectDto() *ProjectDto {
 		Title:         p.Title,
 		Description:   p.Description,
 		Image:         p.Image,
-		TargetAmount:  p.TargetAmount,
-		CurrentAmount: p.CurrentAmount,
+		TargetAmount:  p.TargetFunding,
+		CurrentAmount: p.CurrentFunding,
 		Owner:         p.Owner.ToUserDto(),
 		CreatedAt:     p.CreatedAt.Format(time.RFC3339),
 	}

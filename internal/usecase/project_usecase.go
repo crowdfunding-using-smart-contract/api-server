@@ -31,12 +31,12 @@ func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*
 	ownerID := uuid.MustParse(project.OwnerID)
 
 	payload := &entity.Project{
-		Title:         project.Title,
-		Description:   project.Description,
-		Image:         project.Image,
-		TargetAmount:  project.TargetAmount,
-		CurrentAmount: decimal.NewFromInt(0),
-		OwnerID:       ownerID,
+		Title:          project.Title,
+		Description:    project.Description,
+		Image:          project.Image,
+		TargetFunding:  project.TargetAmount,
+		CurrentFunding: decimal.NewFromInt(0),
+		OwnerID:        ownerID,
 	}
 	newProject, err := uc.projectRepository.Create(payload)
 	if err != nil {
