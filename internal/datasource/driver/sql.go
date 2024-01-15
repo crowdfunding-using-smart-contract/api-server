@@ -74,12 +74,7 @@ func (sql *sqlContext) Connect() error {
 
 	sql.db = db
 
-	if err := sql.db.AutoMigrate(
-		&entity.Transaction{},
-		&entity.User{},
-		&entity.Session{},
-		&entity.Project{},
-	); err != nil {
+	if err := sql.autoMigrateUp(); err != nil {
 		return err
 	}
 
@@ -107,4 +102,15 @@ func (sql *sqlContext) Disconnect() error {
 
 func (sql *sqlContext) DB() *gorm.DB {
 	return sql.db
+}
+
+func (sql *sqlContext) autoMigrateUp() error {
+	return sql.db.AutoMigrate(
+		&entity.Transaction{},
+		&entity.User{},
+		&entity.Session{},
+		&entity.Project{},
+		&entity.ProjectCategory{},
+		&entity.ProjectSubCategory{},
+	)
 }
