@@ -1,0 +1,30 @@
+name: Run Tests
+
+on: [push, pull_request]
+
+jobs:
+  run_unit_tests:
+    strategy:
+      matrix:
+        go: ['1.21']
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+
+      - name: Install Test Dependencies
+        run: go get github.com/stretchr/testify@v1.8.4
+
+      - name: Install Go Dependency
+        run: go mod tidy
+
+      - name: Run Unit Tests
+        run: go test -v ./...
