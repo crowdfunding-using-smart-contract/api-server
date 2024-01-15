@@ -17,21 +17,28 @@ type ProjectSubCategory struct {
 }
 
 type ProjectCategoryDto struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID            string                  `json:"id"`
+	Name          string                  `json:"name"`
+	SubCategories []ProjectSubCategoryDto `json:"sub_categories"`
 } // @name ProjectCategory
 
 type ProjectSubCategoryDto struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
-} // @name ProjectSubCategoryfc3c774c-ea74-4886-a70c-05ff62cc62c0
+} // @name ProjectSubCategory
 
 // Parse functions
 
 func (p *ProjectCategory) ToProjectCategoryDto() *ProjectCategoryDto {
+	subCategories := make([]ProjectSubCategoryDto, len(p.SubCategories))
+	for i, subCategory := range p.SubCategories {
+		subCategories[i] = *subCategory.ToProjectSubCategoryDto()
+	}
+
 	return &ProjectCategoryDto{
-		ID:   p.ID.String(),
-		Name: p.Name,
+		ID:            p.ID.String(),
+		Name:          p.Name,
+		SubCategories: subCategories,
 	}
 }
 
