@@ -2,6 +2,8 @@ package entity
 
 import "github.com/google/uuid"
 
+type Category int
+
 type ProjectCategory struct {
 	Base
 	Name          string               `gorm:"type:varchar(255);not null"`
@@ -15,12 +17,27 @@ type ProjectSubCategory struct {
 }
 
 type ProjectCategoryDto struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	SubCategories []ProjectSubCategoryDto
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ProjectSubCategoryDto struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// Parse functions
+
+func (p *ProjectCategory) ToProjectCategoryDto() *ProjectCategoryDto {
+	return &ProjectCategoryDto{
+		ID:   p.ID.String(),
+		Name: p.Name,
+	}
+}
+
+func (p *ProjectSubCategory) ToProjectSubCategoryDto() *ProjectSubCategoryDto {
+	return &ProjectSubCategoryDto{
+		ID:   p.ID.String(),
+		Name: p.Name,
+	}
 }
