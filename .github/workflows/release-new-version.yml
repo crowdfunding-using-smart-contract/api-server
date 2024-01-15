@@ -1,0 +1,56 @@
+name: Push Tag and Create Release on Github
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  push_tag_to_github:
+    runs-on: ubuntu-latest
+    outputs:
+      prevoiusTag: ${{ steps.previous_tag.outputs.tag }}
+      newTag: ${{ steps.bump_semver.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Previous tag
+        id: previous_tag
+        uses: actions-ecosystem/action-get-latest-tag@v1
+
+      - name: Bump Version
+        id: bump_semver
+        uses: actions-ecosystem/action-bump-semver@v1
+        with:
+          current_version: ${{ steps.previous_tag.outputs.tag }}
+          level: minor
+
+      - name: Push tag to Github
+        uses: actions-ecosystem/action-push-tag@v1
+        with:
+          tag: ${{ steps.bump_semver.outputs.new_version }}
+          message: '${{ steps.bump_semver.outputs.new_version }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
+
+  create_release_on_github:
+    runs-on: ubuntu-latest
+    needs: push_tag_to_github
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Release Changelog Builder
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fromTag: ${{ needs.push_tag_to_github.outputs.previousTag }}
+          toTag: ${{ needs.push_tag_to_github.outputs.newTag }}
+
+      - name: Create Release on Github
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.push_tag_to_github.outputs.newTag }}
+          body: |
+            Release ${{ needs.push_tag_to_github.outputs.newTag }}
+            ${{ steps.github_release.outputs.changelog }}
