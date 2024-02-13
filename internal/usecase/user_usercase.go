@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/password"
@@ -29,6 +30,10 @@ func NewUserUsecase(options *UserUsecaseOptions) UserUsecase {
 }
 
 func (uc *userUsecase) CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error) {
+	if user.Password != user.PasswordConfirmation {
+		return nil, fmt.Errorf("password and password confirmation does not match")
+	}
+
 	hashedPassword, err := password.HashPassword(user.Password)
 	if err != nil {
 		return nil, err
@@ -36,10 +41,10 @@ func (uc *userUsecase) CreateUser(user *entity.UserCreatePayload) (*entity.UserD
 
 	payload := entity.User{
 		Email:          user.Email,
-		FirstName:      user.FirstName,
-		LastName:       user.LastName,
+		Firstname:      user.Firstname,
+		Lastname:       user.Lastname,
+		PhoneNumber:    user.PhoneNumber,
 		HashedPassword: hashedPassword,
-		Role:           entity.ParseUserRole(user.Role),
 	}
 
 	newUser, err := uc.userRepository.Create(&payload)

@@ -574,7 +574,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "sub_categories": {
+                "subcategories": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ProjectSubCategory"
@@ -754,11 +754,11 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "profile_image": {
+                "phone_number": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/fund-o_api-server_internal_entity.UserRole"
+                "profile_image": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
@@ -769,25 +769,29 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "first_name",
-                "last_name",
+                "firstname",
+                "lastname",
                 "password",
-                "role"
+                "password_confirmation",
+                "phone_number"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "first_name": {
+                "firstname": {
                     "type": "string"
                 },
-                "last_name": {
+                "lastname": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string"
                 },
-                "role": {
+                "password_confirmation": {
+                    "type": "string"
+                },
+                "phone_number": {
                     "type": "string"
                 }
             }
@@ -875,28 +879,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "fund-o_api-server_internal_entity.UserRole": {
-            "type": "integer",
-            "enum": [
-                1,
-                2
-            ],
-            "x-enum-varnames": [
-                "Backer",
-                "Creator"
-            ]
-        },
-        "internal_entity.UserRole": {
-            "type": "integer",
-            "enum": [
-                1,
-                2
-            ],
-            "x-enum-varnames": [
-                "Backer",
-                "Creator"
-            ]
         },
         "internal_http_handler.RenewAccessTokenPayload": {
             "type": "object",

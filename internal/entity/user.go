@@ -18,30 +18,31 @@ type User struct {
 	Base
 	Email          string `gorm:"not null;uniqueIndex"`
 	HashedPassword string `gorm:"not null"`
-	FirstName      string `gorm:"not null"`
-	LastName       string `gorm:"not null"`
+	Firstname      string `gorm:"not null"`
+	Lastname       string `gorm:"not null"`
+	PhoneNumber    string `gorm:"not null"`
 	ProfileImage   string
-	Role           UserRole `gorm:"not null"`
 }
 
 type UserDto struct {
-	ID           string   `json:"id"`
-	Email        string   `json:"email"`
-	FullName     string   `json:"full_name"`
-	ProfileImage string   `json:"profile_image"`
-	Role         UserRole `json:"role"`
-	CreatedAt    string   `json:"created_at"`
-	UpdatedAt    string   `json:"updated_at"`
+	ID           string `json:"id"`
+	Email        string `json:"email"`
+	FullName     string `json:"full_name"`
+	PhoneNumber  string `json:"phone_number"`
+	ProfileImage string `json:"profile_image"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 } // @name User
 
 // Secondary types
 
 type UserCreatePayload struct {
-	Email     string `json:"email" binding:"required"`
-	FirstName string `json:"first_name" binding:"required"`
-	LastName  string `json:"last_name" binding:"required"`
-	Password  string `json:"password" binding:"required"`
-	Role      string `json:"role" binding:"required"`
+	Email                string `json:"email" binding:"required"`
+	Firstname            string `json:"firstname" binding:"required"`
+	Lastname             string `json:"lastname" binding:"required"`
+	PhoneNumber          string `json:"phone_number" binding:"required"`
+	Password             string `json:"password" binding:"required"`
+	PasswordConfirmation string `json:"password_confirmation" binding:"required"`
 } // @name UserCreatePayload
 
 type UserLoginPayload struct {
@@ -64,9 +65,9 @@ func (u *User) ToUserDto() *UserDto {
 	return &UserDto{
 		ID:           u.ID.String(),
 		Email:        u.Email,
-		FullName:     fmt.Sprintf("%s %s", u.FirstName, u.LastName),
+		FullName:     fmt.Sprintf("%s %s", u.Firstname, u.Lastname),
+		PhoneNumber:  u.PhoneNumber,
 		ProfileImage: u.ProfileImage,
-		Role:         u.Role,
 		CreatedAt:    u.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:    u.UpdatedAt.Format(time.RFC3339),
 	}
