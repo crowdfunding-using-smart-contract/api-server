@@ -57,5 +57,5 @@ func makeDefaultAppConfig() {
 	viper.SetDefault("DatasourceConfig.SqlDBConfig.SQL_USERNAME", "docker")
 	viper.SetDefault("DatasourceConfig.SqlDBConfig.SQL_PASSWORD", "secret")
 	viper.SetDefault("DatasourceConfig.SqlDBConfig.SQL_PORT", 5432)
-	viper.SetDefault("DatasourceConfig.SqlDBConfig.SQL_DATABASE", "gin-gorm-boilerplate")
+	viper.SetDefault("DatasourceConfig.SqlDBConfig.SQL_DATABASE", "fundo")
 }

@@ -174,6 +174,9 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		authRoute.POST("/register", authHandler.Register)
 		authRoute.POST("/login", authHandler.Login)
 		authRoute.POST("/renew-token", authHandler.RenewAccessToken)
+		// authRoute.POST("/login-with-google", func(c *gin.Context) {
+		// 	c.Redirect(http.StatusTemporaryRedirect, )
+		// })
 	}
 
 	userRoute := routeV1.Group("/users")

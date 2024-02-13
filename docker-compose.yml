@@ -7,6 +7,6 @@ services:
     environment:
       POSTGRES_USER: docker
       POSTGRES_PASSWORD: secret
-      POSTGRES_DB: gin-gorm-boilerplate
+      POSTGRES_DB: fundo
     ports:
       - 5432:5432

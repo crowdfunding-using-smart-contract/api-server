@@ -19,7 +19,7 @@ type ProjectSubCategory struct {
 type ProjectCategoryDto struct {
 	ID            string                  `json:"id"`
 	Name          string                  `json:"name"`
-	SubCategories []ProjectSubCategoryDto `json:"sub_categories"`
+	SubCategories []ProjectSubCategoryDto `json:"subcategories"`
 } // @name ProjectCategory
 
 type ProjectSubCategoryDto struct {
