@@ -19,8 +19,7 @@ func LoadAppConfig(path string) (config AppConfig, err error) {
 	makeDefaultAppConfig()
 	viper.AddConfigPath(path)
 
-	viper.SetConfigName("app")
-	viper.SetConfigType("env")
+	viper.SetConfigFile(".env")
 
 	viper.AutomaticEnv()
 
