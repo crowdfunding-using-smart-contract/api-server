@@ -36,10 +36,70 @@ definitions:
       total:
         type: integer
     type: object
+  Project:
+    properties:
+      category:
+        $ref: '#/definitions/ProjectCategory'
+      created_at:
+        type: string
+      current_amount:
+        type: number
+      description:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      launch_date:
+        type: string
+      monetary_unit:
+        type: string
+      owner:
+        $ref: '#/definitions/User'
+      start_date:
+        type: string
+      sub_category:
+        $ref: '#/definitions/ProjectSubCategory'
+      sub_title:
+        type: string
+      target_amount:
+        type: number
+      title:
+        type: string
+    type: object
+  ProjectCategory:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      subcategories:
+        items:
+          $ref: '#/definitions/ProjectSubCategory'
+        type: array
+    type: object
+  ProjectSubCategory:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
   ResultResponse-PaginateResult-Transaction:
     properties:
       result:
         $ref: '#/definitions/PaginateResult-Transaction'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-Project:
+    properties:
+      result:
+        $ref: '#/definitions/Project'
       status:
         type: string
       status_code:
@@ -67,6 +127,28 @@ definitions:
     properties:
       result:
         $ref: '#/definitions/UserLoginResponse'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-array_Project:
+    properties:
+      result:
+        items:
+          $ref: '#/definitions/Project'
+        type: array
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-array_ProjectCategory:
+    properties:
+      result:
+        items:
+          $ref: '#/definitions/ProjectCategory'
+        type: array
       status:
         type: string
       status_code:
@@ -108,11 +190,11 @@ definitions:
       full_name:
         type: string
       id:
-        type: integer
+        type: string
+      phone_number:
+        type: string
       profile_image:
         type: string
-      role:
-        $ref: '#/definitions/internal_entity.UserRole'
       updated_at:
         type: string
     type: object
@@ -120,20 +202,23 @@ definitions:
     properties:
       email:
         type: string
-      first_name:
+      firstname:
         type: string
-      last_name:
+      lastname:
         type: string
       password:
         type: string
-      role:
+      password_confirmation:
+        type: string
+      phone_number:
         type: string
     required:
     - email
-    - first_name
-    - last_name
+    - firstname
+    - lastname
     - password
-    - role
+    - password_confirmation
+    - phone_number
     type: object
   UserLoginPayload:
     properties:
@@ -160,14 +245,38 @@ definitions:
       user:
         $ref: '#/definitions/User'
     type: object
-  internal_entity.UserRole:
-    enum:
-    - 1
-    - 2
-    type: integer
-    x-enum-varnames:
-    - Backer
-    - Creator
+  fund-o_api-server_internal_entity.ProjectCreatePayload:
+    properties:
+      category_id:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: string
+      image:
+        type: string
+      launch_date:
+        type: string
+      monetary_unit:
+        type: string
+      ownerID:
+        type: string
+      sub_category_id:
+        type: string
+      sub_title:
+        type: string
+      target_amount:
+        type: number
+      title:
+        type: string
+    required:
+    - category_id
+    - end_date
+    - sub_category_id
+    - sub_title
+    - target_amount
+    - title
+    type: object
   internal_http_handler.RenewAccessTokenPayload:
     properties:
       refresh_token:
@@ -301,6 +410,79 @@ paths:
       summary: Health Check
       tags:
       - healthcheck
+  /projects:
+    post:
+      description: Create project with required data
+      operationId: CreateProject
+      parameters:
+      - description: Project data to be created
+        in: body
+        name: Project
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.ProjectCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Project
+      tags:
+      - projects
+  /projects/categories:
+    get:
+      description: List project categories for selection
+      operationId: ListProjectCategories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-array_ProjectCategory'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Project Categories
+      tags:
+      - projects
+  /projects/own:
+    get:
+      description: Get own projects with authenticate creator
+      operationId: GetOwnProjects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-array_Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get own Projects
+      tags:
+      - projects
   /transactions:
     get:
       description: Get list of transactions

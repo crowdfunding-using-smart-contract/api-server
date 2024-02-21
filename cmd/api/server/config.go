@@ -13,4 +13,6 @@ type ApiServerConfig struct {
 	APP_READ_ONLY                bool   `mapstructure:"APP_READ_ONLY"`
 	LOG_REQUEST                  bool   `mapstructure:"LOG_REQUEST"`
 	JWT_SECRET_KEY               string `mapstructure:"JWT_SECRET_KEY"`
+	GOOGLE_CLIENT_ID             string `mapstructure:"GOOGLE_CLIENT_ID"`
+	GOOGLE_CLIENT_SECRET         string `mapstructure:"GOOGLE_CLIENT_SECRET"`
 }

@@ -1,8 +1,10 @@
 package driver
 
 import (
+	"errors"
 	"fmt"
 
+	"fund-o/api-server/internal/datasource/driver/seeds"
 	"fund-o/api-server/internal/entity"
 
 	log "github.com/sirupsen/logrus"
@@ -74,11 +76,7 @@ func (sql *sqlContext) Connect() error {
 
 	sql.db = db
 
-	if err := sql.db.AutoMigrate(
-		&entity.Transaction{},
-		&entity.User{},
-		&entity.Session{},
-	); err != nil {
+	if err := sql.autoMigrateUp(); err != nil {
 		return err
 	}
 
@@ -106,4 +104,30 @@ func (sql *sqlContext) Disconnect() error {
 
 func (sql *sqlContext) DB() *gorm.DB {
 	return sql.db
+}
+
+func (sql *sqlContext) autoMigrateUp() error {
+	db := sql.db
+	if err := db.AutoMigrate(
+		&entity.Transaction{},
+		&entity.User{},
+		&entity.Session{},
+		&entity.Project{},
+		&entity.ProjectCategory{},
+		&entity.ProjectSubCategory{},
+	); err != nil {
+		return err
+	}
+
+	if err := db.AutoMigrate(&entity.ProjectCategory{}); err == nil && db.Migrator().HasTable(&entity.ProjectCategory{}) {
+		if err := db.First(&entity.ProjectCategory{}).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			for _, category := range seeds.ProjectCategorySeed {
+				if result := db.Create(&category); result.Error != nil {
+					return result.Error
+				}
+			}
+		}
+	}
+
+	return nil
 }

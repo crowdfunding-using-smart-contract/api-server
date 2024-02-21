@@ -185,6 +185,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/projects": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create project with required data",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Create Project",
+                "operationId": "CreateProject",
+                "parameters": [
+                    {
+                        "description": "Project data to be created",
+                        "name": "Project",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.ProjectCreatePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/categories": {
+            "get": {
+                "description": "List project categories for selection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "List Project Categories",
+                "operationId": "ListProjectCategories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-array_ProjectCategory"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/own": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get own projects with authenticate creator",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Get own Projects",
+                "operationId": "GetOwnProjects",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-array_Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/transactions": {
             "get": {
                 "description": "Get list of transactions",
@@ -401,11 +515,103 @@ const docTemplate = `{
                 }
             }
         },
+        "Project": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/ProjectCategory"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "current_amount": {
+                    "type": "number"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "launch_date": {
+                    "type": "string"
+                },
+                "monetary_unit": {
+                    "type": "string"
+                },
+                "owner": {
+                    "$ref": "#/definitions/User"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "sub_category": {
+                    "$ref": "#/definitions/ProjectSubCategory"
+                },
+                "sub_title": {
+                    "type": "string"
+                },
+                "target_amount": {
+                    "type": "number"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProjectCategory": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subcategories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProjectSubCategory"
+                    }
+                }
+            }
+        },
+        "ProjectSubCategory": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "ResultResponse-PaginateResult-Transaction": {
             "type": "object",
             "properties": {
                 "result": {
                     "$ref": "#/definitions/PaginateResult-Transaction"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-Project": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/Project"
                 },
                 "status": {
                     "type": "string"
@@ -448,6 +654,40 @@ const docTemplate = `{
             "properties": {
                 "result": {
                     "$ref": "#/definitions/UserLoginResponse"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-array_Project": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Project"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-array_ProjectCategory": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProjectCategory"
+                    }
                 },
                 "status": {
                     "type": "string"
@@ -512,13 +752,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
                 },
                 "profile_image": {
                     "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/internal_entity.UserRole"
                 },
                 "updated_at": {
                     "type": "string"
@@ -529,25 +769,29 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "first_name",
-                "last_name",
+                "firstname",
+                "lastname",
                 "password",
-                "role"
+                "password_confirmation",
+                "phone_number"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "first_name": {
+                "firstname": {
                     "type": "string"
                 },
-                "last_name": {
+                "lastname": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string"
                 },
-                "role": {
+                "password_confirmation": {
+                    "type": "string"
+                },
+                "phone_number": {
                     "type": "string"
                 }
             }
@@ -590,16 +834,51 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_entity.UserRole": {
-            "type": "integer",
-            "enum": [
-                1,
-                2
+        "fund-o_api-server_internal_entity.ProjectCreatePayload": {
+            "type": "object",
+            "required": [
+                "category_id",
+                "end_date",
+                "sub_category_id",
+                "sub_title",
+                "target_amount",
+                "title"
             ],
-            "x-enum-varnames": [
-                "Backer",
-                "Creator"
-            ]
+            "properties": {
+                "category_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "launch_date": {
+                    "type": "string"
+                },
+                "monetary_unit": {
+                    "type": "string"
+                },
+                "ownerID": {
+                    "type": "string"
+                },
+                "sub_category_id": {
+                    "type": "string"
+                },
+                "sub_title": {
+                    "type": "string"
+                },
+                "target_amount": {
+                    "type": "number"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
         },
         "internal_http_handler.RenewAccessTokenPayload": {
             "type": "object",

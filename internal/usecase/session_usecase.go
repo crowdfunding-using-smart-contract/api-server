@@ -8,8 +8,8 @@ import (
 )
 
 type SessionUsecase interface {
-	CreateSession(payload *entity.SessionCreatePayload) (*entity.Session, error)
-	GetSessionByID(sessionID uuid.UUID) (*entity.Session, error)
+	CreateSession(payload *entity.SessionCreatePayload) (*entity.SessionDto, error)
+	GetSessionByID(sessionID uuid.UUID) (*entity.SessionDto, error)
 }
 
 type sessionUsecase struct {
@@ -26,10 +26,10 @@ func NewSessionUsecase(options *SessionUsecaseOptions) SessionUsecase {
 	}
 }
 
-func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*entity.Session, error) {
+func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*entity.SessionDto, error) {
 	session := entity.Session{
 		ID:           payload.ID,
-		UserID:       payload.UserID,
+		UserID:       uuid.MustParse(payload.UserID),
 		RefreshToken: payload.RefreshToken,
 		UserAgent:    payload.UserAgent,
 		ClientIP:     payload.ClientIP,
@@ -41,9 +41,14 @@ func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*
 		return nil, err
 	}
 
-	return newSession, nil
+	return newSession.ToSessionDto(), nil
 }
 
-func (uc *sessionUsecase) GetSessionByID(sessionID uuid.UUID) (*entity.Session, error) {
-	return uc.sessionRepository.FindByID(sessionID)
+func (uc *sessionUsecase) GetSessionByID(sessionID uuid.UUID) (*entity.SessionDto, error) {
+	session, err := uc.sessionRepository.FindByID(sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return session.ToSessionDto(), nil
 }

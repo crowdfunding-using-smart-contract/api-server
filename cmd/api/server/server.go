@@ -103,6 +103,8 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	transactionRepository := repository.NewTransactionRepository(datasources.GetSqlDB())
 	userRepository := repository.NewUserRepository(datasources.GetSqlDB())
 	sessionRepository := repository.NewSessionRepository(datasources.GetSqlDB())
+	projectRepository := repository.NewProjectRepository(datasources.GetSqlDB())
+	projectCategoryRepository := repository.NewProjectCategoryRepository(datasources.GetSqlDB())
 
 	// Usecases
 	transactionUsecase := usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
@@ -113,6 +115,12 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	sessionUsecase := usecase.NewSessionUsecase(&usecase.SessionUsecaseOptions{
 		SessionRepository: sessionRepository,
+	})
+	projectUsecase := usecase.NewProjectUsecase(&usecase.ProjectUsecaseOptions{
+		ProjectRepository: projectRepository,
+	})
+	projectCategoryUsecase := usecase.NewProjectCategoryUsecase(&usecase.ProjectCategoryUsecaseOptions{
+		ProjectCategoryRepository: projectCategoryRepository,
 	})
 
 	// Handlers
@@ -126,6 +134,11 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
 		UserUsecase: userUsecase,
+	})
+	projectHandler := handler.NewProjectHandler(&handler.ProjectHandlerOptions{
+		ProjectUsecase:         projectUsecase,
+		UserUsecase:            userUsecase,
+		ProjectCategoryUsecase: projectCategoryUsecase,
 	})
 
 	router := gin.New()
@@ -145,6 +158,8 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	docs.SwaggerInfo.BasePath = config.APP_PATH_PREFIX
 	initSwaggerDocs(routeV1)
 
+	authMiddleware := middleware.AuthMiddleware(jwtMaker)
+
 	// Routes
 	routeV1.GET("/hello", handler.GetHelloMessage)
 	transactionRoute := routeV1.Group("/transactions")
@@ -159,11 +174,21 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		authRoute.POST("/register", authHandler.Register)
 		authRoute.POST("/login", authHandler.Login)
 		authRoute.POST("/renew-token", authHandler.RenewAccessToken)
+		// authRoute.POST("/login-with-google", func(c *gin.Context) {
+		// 	c.Redirect(http.StatusTemporaryRedirect, )
+		// })
 	}
 
 	userRoute := routeV1.Group("/users")
 	{
-		userRoute.GET("/me", middleware.AuthMiddleware(jwtMaker), userHandler.GetMe)
+		userRoute.GET("/me", authMiddleware, userHandler.GetMe)
+	}
+
+	projectRoute := routeV1.Group("/projects")
+	{
+		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
+		projectRoute.GET("/own", authMiddleware, projectHandler.GetOwnProjects)
+		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
 	}
 
 	return router
