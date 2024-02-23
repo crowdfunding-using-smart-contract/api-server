@@ -79,7 +79,7 @@ func (server *apiServer) Start() error {
 	}
 	logger.Info("Unregistering datasources completed")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
 	if err := server.httpServer.Shutdown(ctx); err != nil {
