@@ -20,3 +20,7 @@
 
 # Ignore Mac .DS_Store
 *.DS_Store
+
+# Editor configuration files
+.idea
+.vscode
