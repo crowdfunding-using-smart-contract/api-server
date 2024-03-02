@@ -6,7 +6,7 @@ import (
 	"fund-o/api-server/pkg/pagination"
 )
 
-type TransactionUsecase interface {
+type TransactionUseCase interface {
 	CreateTransaction(transaction *entity.TransactionCreatePayload) (*entity.TransactionDto, error)
 	GetTransactionByRefCode(refCode string) (*entity.TransactionDto, error)
 	ListTransactions(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.TransactionDto]
@@ -16,11 +16,11 @@ type transactionRepository struct {
 	transactionRepository repository.TransactionRepository
 }
 
-type TransactionUsecaseOptions struct {
+type TransactionUseCaseOptions struct {
 	TransactionRepository repository.TransactionRepository
 }
 
-func NewTransactionUsecase(options *TransactionUsecaseOptions) TransactionUsecase {
+func NewTransactionUseCase(options *TransactionUseCaseOptions) TransactionUseCase {
 	return &transactionRepository{
 		transactionRepository: options.TransactionRepository,
 	}

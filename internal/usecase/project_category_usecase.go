@@ -5,25 +5,25 @@ import (
 	"fund-o/api-server/internal/entity"
 )
 
-type ProjectCategoryUsecase interface {
+type ProjectCategoryUseCase interface {
 	ListProjectCategories() ([]entity.ProjectCategoryDto, error)
 }
 
-type projectCategoryUsecase struct {
+type projectCategoryUseCase struct {
 	projectCategoryRepository repository.ProjectCategoryRepository
 }
 
-type ProjectCategoryUsecaseOptions struct {
+type ProjectCategoryUseCaseOptions struct {
 	repository.ProjectCategoryRepository
 }
 
-func NewProjectCategoryUsecase(options *ProjectCategoryUsecaseOptions) ProjectCategoryUsecase {
-	return &projectCategoryUsecase{
+func NewProjectCategoryUseCase(options *ProjectCategoryUseCaseOptions) ProjectCategoryUseCase {
+	return &projectCategoryUseCase{
 		projectCategoryRepository: options.ProjectCategoryRepository,
 	}
 }
 
-func (uc *projectCategoryUsecase) ListProjectCategories() ([]entity.ProjectCategoryDto, error) {
+func (uc *projectCategoryUseCase) ListProjectCategories() ([]entity.ProjectCategoryDto, error) {
 	categories, err := uc.projectCategoryRepository.FindAll()
 	if err != nil {
 		return nil, err

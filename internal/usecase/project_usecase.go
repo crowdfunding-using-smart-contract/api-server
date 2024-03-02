@@ -10,26 +10,26 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type ProjectUsecase interface {
+type ProjectUseCase interface {
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
 }
 
-type projectUsecase struct {
+type projectUseCase struct {
 	projectRepository repository.ProjectRepository
 }
 
-type ProjectUsecaseOptions struct {
+type ProjectUseCaseOptions struct {
 	repository.ProjectRepository
 }
 
-func NewProjectUsecase(options *ProjectUsecaseOptions) ProjectUsecase {
-	return &projectUsecase{
+func NewProjectUseCase(options *ProjectUseCaseOptions) ProjectUseCase {
+	return &projectUseCase{
 		projectRepository: options.ProjectRepository,
 	}
 }
 
-func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {
+func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {
 	ownerID := uuid.MustParse(project.OwnerID)
 
 	endDate, err := time.Parse(time.RFC3339, project.EndDate)
@@ -68,7 +68,7 @@ func (uc *projectUsecase) CreateProject(project *entity.ProjectCreatePayload) (*
 	return newProject.ToProjectDto(), nil
 }
 
-func (uc *projectUsecase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error) {
+func (uc *projectUseCase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error) {
 	ownerID := uuid.MustParse(requestOwnerID)
 
 	projects, err := uc.projectRepository.FindAllByOwnerID(ownerID)

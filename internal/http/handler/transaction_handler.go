@@ -13,16 +13,16 @@ import (
 )
 
 type TransactionHandlerOptions struct {
-	TransactionUsecase usecase.TransactionUsecase
+	TransactionUseCase usecase.TransactionUseCase
 }
 
 type TransactionHandler struct {
-	transactionUsecase usecase.TransactionUsecase
+	transactionUseCase usecase.TransactionUseCase
 }
 
 func NewTransactionHandler(options *TransactionHandlerOptions) *TransactionHandler {
 	return &TransactionHandler{
-		transactionUsecase: options.TransactionUsecase,
+		transactionUseCase: options.TransactionUseCase,
 	}
 }
 
@@ -45,7 +45,7 @@ func (handler *TransactionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	transactionDto, err := handler.transactionUsecase.CreateTransaction(&transaction)
+	transactionDto, err := handler.transactionUseCase.CreateTransaction(&transaction)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create transaction: %v", err.Error())))
 		return
@@ -67,7 +67,7 @@ func (handler *TransactionHandler) CreateTransaction(c *gin.Context) {
 func (handler *TransactionHandler) GetTransaction(c *gin.Context) {
 	transactionRefCode := c.Param("id")
 
-	transactionDto, err := handler.transactionUsecase.GetTransactionByRefCode(transactionRefCode)
+	transactionDto, err := handler.transactionUseCase.GetTransactionByRefCode(transactionRefCode)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(makeHttpErrorResponse(http.StatusNotFound, fmt.Sprintf("error get transaction: %v", err.Error())))
@@ -99,6 +99,6 @@ func (handler *TransactionHandler) ListTransactions(c *gin.Context) {
 		return
 	}
 
-	transactions := handler.transactionUsecase.ListTransactions(paginateOptions)
+	transactions := handler.transactionUseCase.ListTransactions(paginateOptions)
 	c.JSON(makeHttpResponse(http.StatusOK, transactions))
 }

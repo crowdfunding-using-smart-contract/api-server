@@ -12,22 +12,22 @@ import (
 )
 
 type ProjectHandler struct {
-	projectUsecase         usecase.ProjectUsecase
-	projectCategoryUsecase usecase.ProjectCategoryUsecase
-	userUsecase            usecase.UserUsecase
+	projectUseCase         usecase.ProjectUseCase
+	projectCategoryUseCase usecase.ProjectCategoryUseCase
+	userUseCase            usecase.UserUseCase
 }
 
 type ProjectHandlerOptions struct {
-	usecase.ProjectUsecase
-	usecase.ProjectCategoryUsecase
-	usecase.UserUsecase
+	usecase.ProjectUseCase
+	usecase.ProjectCategoryUseCase
+	usecase.UserUseCase
 }
 
 func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 	return &ProjectHandler{
-		projectUsecase:         options.ProjectUsecase,
-		projectCategoryUsecase: options.ProjectCategoryUsecase,
-		userUsecase:            options.UserUsecase,
+		projectUseCase:         options.ProjectUseCase,
+		projectCategoryUseCase: options.ProjectCategoryUseCase,
+		userUseCase:            options.UserUseCase,
 	}
 }
 
@@ -53,7 +53,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userUsecase.GetUserById(userID)
+	user, err := h.userUseCase.GetUserById(userID)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project: %v", err.Error())))
 		return
@@ -61,7 +61,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 
 	req.OwnerID = user.ID
 
-	projectDto, err := h.projectUsecase.CreateProject(&req)
+	projectDto, err := h.projectUseCase.CreateProject(&req)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project: %v", err.Error())))
 		return
@@ -87,7 +87,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 func (h *ProjectHandler) GetOwnProjects(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
 
-	projectDtos, err := h.projectUsecase.GetProjectsByOwnerID(userID)
+	projectDtos, err := h.projectUseCase.GetProjectsByOwnerID(userID)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project: %v", err.Error())))
 		return
@@ -106,7 +106,7 @@ func (h *ProjectHandler) GetOwnProjects(c *gin.Context) {
 // @response 500 {object} handler.ErrorResponse "Internal Server Error"
 // @router /projects/categories [get]
 func (h *ProjectHandler) ListProjectCategories(c *gin.Context) {
-	categories, err := h.projectCategoryUsecase.ListProjectCategories()
+	categories, err := h.projectCategoryUseCase.ListProjectCategories()
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error list project categories: %v", err.Error())))
 		return

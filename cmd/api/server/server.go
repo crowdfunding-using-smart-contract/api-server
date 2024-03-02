@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,13 +34,13 @@ type ApiServer interface {
 }
 
 type apiServer struct {
-	httpServer  *http.Server
-	config      *ApiServerConfig
-	datasources datasource.Datasource
+	httpServer *http.Server
+	config     *ApiServerConfig
+	datasource datasource.Datasource
 }
 
-func NewApiServer(config *ApiServerConfig, datasources datasource.Datasource) ApiServer {
-	router := inject(config, datasources)
+func NewApiServer(config *ApiServerConfig, datasource datasource.Datasource) ApiServer {
+	router := inject(config, datasource)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", config.APP_HOST, config.APP_PORT),
@@ -47,9 +48,9 @@ func NewApiServer(config *ApiServerConfig, datasources datasource.Datasource) Ap
 	}
 
 	return &apiServer{
-		httpServer:  server,
-		config:      config,
-		datasources: datasources,
+		httpServer: server,
+		config:     config,
+		datasource: datasource,
 	}
 }
 
@@ -62,7 +63,7 @@ func (server *apiServer) Start() error {
 	go func() {
 		logger.Infof("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
 		logger.Info("Starting listening for HTTP requests completed")
-		if err := server.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatalf("Failed to listen and serve: %+v", err)
 		}
 	}()
@@ -73,11 +74,11 @@ func (server *apiServer) Start() error {
 	<-quit
 	logger.Info("Shutting down server...")
 
-	logger.Info("Unregistering datasources...")
-	if err := server.datasources.Close(); err != nil {
+	logger.Info("Unregistering datasource...")
+	if err := server.datasource.Close(); err != nil {
 		return fmt.Errorf("error when close datasources: %v", err)
 	}
-	logger.Info("Unregistering datasources completed")
+	logger.Info("Unregistering datasource completed")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -92,7 +93,7 @@ func (server *apiServer) Start() error {
 	return nil
 }
 
-func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Engine {
+func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engine {
 	// Makers
 	jwtMaker, err := token.NewJWTMaker(config.JWT_SECRET_KEY)
 	if err != nil {
@@ -100,45 +101,45 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 	}
 
 	// Repositories
-	transactionRepository := repository.NewTransactionRepository(datasources.GetSqlDB())
-	userRepository := repository.NewUserRepository(datasources.GetSqlDB())
-	sessionRepository := repository.NewSessionRepository(datasources.GetSqlDB())
-	projectRepository := repository.NewProjectRepository(datasources.GetSqlDB())
-	projectCategoryRepository := repository.NewProjectCategoryRepository(datasources.GetSqlDB())
+	transactionRepository := repository.NewTransactionRepository(datasource.GetSqlDB())
+	userRepository := repository.NewUserRepository(datasource.GetSqlDB())
+	sessionRepository := repository.NewSessionRepository(datasource.GetSqlDB())
+	projectRepository := repository.NewProjectRepository(datasource.GetSqlDB())
+	projectCategoryRepository := repository.NewProjectCategoryRepository(datasource.GetSqlDB())
 
-	// Usecases
-	transactionUsecase := usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
+	// UseCases
+	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
 		TransactionRepository: transactionRepository,
 	})
-	userUsecase := usecase.NewUserUsecase(&usecase.UserUsecaseOptions{
+	userUseCase := usecase.NewUserUseCase(&usecase.UserUseCaseOptions{
 		UserRepository: userRepository,
 	})
-	sessionUsecase := usecase.NewSessionUsecase(&usecase.SessionUsecaseOptions{
+	sessionUseCase := usecase.NewSessionUseCase(&usecase.SessionUseCaseOptions{
 		SessionRepository: sessionRepository,
 	})
-	projectUsecase := usecase.NewProjectUsecase(&usecase.ProjectUsecaseOptions{
+	projectUseCase := usecase.NewProjectUseCase(&usecase.ProjectUseCaseOptions{
 		ProjectRepository: projectRepository,
 	})
-	projectCategoryUsecase := usecase.NewProjectCategoryUsecase(&usecase.ProjectCategoryUsecaseOptions{
+	projectCategoryUseCase := usecase.NewProjectCategoryUseCase(&usecase.ProjectCategoryUseCaseOptions{
 		ProjectCategoryRepository: projectCategoryRepository,
 	})
 
 	// Handlers
 	transactionHandler := handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
-		TransactionUsecase: transactionUsecase,
+		TransactionUseCase: transactionUseCase,
 	})
 	authHandler := handler.NewAuthHandler(&handler.AuthHandlerOptions{
-		UserUsecase:    userUsecase,
-		SessionUsecase: sessionUsecase,
+		UserUseCase:    userUseCase,
+		SessionUseCase: sessionUseCase,
 		TokenMaker:     jwtMaker,
 	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
-		UserUsecase: userUsecase,
+		UserUseCase: userUseCase,
 	})
 	projectHandler := handler.NewProjectHandler(&handler.ProjectHandlerOptions{
-		ProjectUsecase:         projectUsecase,
-		UserUsecase:            userUsecase,
-		ProjectCategoryUsecase: projectCategoryUsecase,
+		ProjectUseCase:         projectUseCase,
+		UserUseCase:            userUseCase,
+		ProjectCategoryUseCase: projectCategoryUseCase,
 	})
 
 	router := gin.New()
@@ -196,7 +197,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 
 // @title FundO API
 // @version 1.0
-// @description This is a sample server server.
+// @description This is a sample server.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support

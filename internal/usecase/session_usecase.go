@@ -7,26 +7,26 @@ import (
 	"github.com/google/uuid"
 )
 
-type SessionUsecase interface {
+type SessionUseCase interface {
 	CreateSession(payload *entity.SessionCreatePayload) (*entity.SessionDto, error)
 	GetSessionByID(sessionID uuid.UUID) (*entity.SessionDto, error)
 }
 
-type sessionUsecase struct {
+type sessionUseCase struct {
 	sessionRepository repository.SessionRepository
 }
 
-type SessionUsecaseOptions struct {
+type SessionUseCaseOptions struct {
 	repository.SessionRepository
 }
 
-func NewSessionUsecase(options *SessionUsecaseOptions) SessionUsecase {
-	return &sessionUsecase{
+func NewSessionUseCase(options *SessionUseCaseOptions) SessionUseCase {
+	return &sessionUseCase{
 		sessionRepository: options.SessionRepository,
 	}
 }
 
-func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*entity.SessionDto, error) {
+func (uc *sessionUseCase) CreateSession(payload *entity.SessionCreatePayload) (*entity.SessionDto, error) {
 	session := entity.Session{
 		ID:           payload.ID,
 		UserID:       uuid.MustParse(payload.UserID),
@@ -44,7 +44,7 @@ func (uc *sessionUsecase) CreateSession(payload *entity.SessionCreatePayload) (*
 	return newSession.ToSessionDto(), nil
 }
 
-func (uc *sessionUsecase) GetSessionByID(sessionID uuid.UUID) (*entity.SessionDto, error) {
+func (uc *sessionUseCase) GetSessionByID(sessionID uuid.UUID) (*entity.SessionDto, error) {
 	session, err := uc.sessionRepository.FindByID(sessionID)
 	if err != nil {
 		return nil, err

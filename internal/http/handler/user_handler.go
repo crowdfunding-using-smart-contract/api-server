@@ -11,16 +11,16 @@ import (
 )
 
 type UserHandlerOptions struct {
-	usecase.UserUsecase
+	usecase.UserUseCase
 }
 
 type UserHandler struct {
-	userUsecase usecase.UserUsecase
+	userUseCase usecase.UserUseCase
 }
 
 func NewUserHandler(options *UserHandlerOptions) *UserHandler {
 	return &UserHandler{
-		userUsecase: options.UserUsecase,
+		userUseCase: options.UserUseCase,
 	}
 }
 
@@ -37,7 +37,7 @@ func NewUserHandler(options *UserHandlerOptions) *UserHandler {
 // @router /users/me [get]
 func (h *UserHandler) GetMe(c *gin.Context) {
 	payload := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
-	user, err := h.userUsecase.GetUserById(payload.UserID)
+	user, err := h.userUseCase.GetUserById(payload.UserID)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
 		return

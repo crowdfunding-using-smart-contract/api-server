@@ -13,21 +13,21 @@ import (
 )
 
 type AuthHandlerOptions struct {
-	usecase.UserUsecase
-	usecase.SessionUsecase
+	usecase.UserUseCase
+	usecase.SessionUseCase
 	TokenMaker token.Maker
 }
 
 type AuthHandler struct {
-	userUsecase    usecase.UserUsecase
-	sessionUsecase usecase.SessionUsecase
+	userUseCase    usecase.UserUseCase
+	sessionUseCase usecase.SessionUseCase
 	tokenMaker     token.Maker
 }
 
 func NewAuthHandler(options *AuthHandlerOptions) *AuthHandler {
 	return &AuthHandler{
-		userUsecase:    options.UserUsecase,
-		sessionUsecase: options.SessionUsecase,
+		userUseCase:    options.UserUseCase,
+		sessionUseCase: options.SessionUseCase,
 		tokenMaker:     options.TokenMaker,
 	}
 }
@@ -51,7 +51,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	userDto, err := h.userUsecase.CreateUser(&user)
+	userDto, err := h.userUseCase.CreateUser(&user)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error register user: %v", err.Error())))
 		return
@@ -79,7 +79,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userUsecase.AuthenticateUser(&req)
+	user, err := h.userUseCase.AuthenticateUser(&req)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(makeHttpErrorResponse(http.StatusNotFound, fmt.Sprintf("error authenticate user: %v", err.Error())))
@@ -101,7 +101,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	session, err := h.sessionUsecase.CreateSession(&entity.SessionCreatePayload{
+	session, err := h.sessionUseCase.CreateSession(&entity.SessionCreatePayload{
 		ID:           refreshTokenPayload.ID,
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
@@ -159,7 +159,7 @@ func (h *AuthHandler) RenewAccessToken(c *gin.Context) {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
 	}
 
-	session, err := h.sessionUsecase.GetSessionByID(refreshTokenPayload.ID)
+	session, err := h.sessionUseCase.GetSessionByID(refreshTokenPayload.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(makeHttpErrorResponse(http.StatusNotFound, err.Error()))

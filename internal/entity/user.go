@@ -22,6 +22,7 @@ type User struct {
 	Lastname       string `gorm:"not null"`
 	PhoneNumber    string `gorm:"not null"`
 	ProfileImage   string
+	Verified       bool `gorm:"not null;default:false"`
 }
 
 type UserDto struct {
