@@ -17,9 +17,12 @@ type AppConfig struct {
 
 func LoadAppConfig(path string) (config AppConfig, err error) {
 	makeDefaultAppConfig()
+	//viper.AddConfigPath(path)
 	viper.AddConfigPath(path)
+	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
 
-	viper.SetConfigFile(".env")
+	//viper.SetConfigFile(".env")
 
 	viper.AutomaticEnv()
 
