@@ -13,6 +13,7 @@ type UserUseCase interface {
 	CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error)
 	AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error)
 	GetUserById(id string) (*entity.UserDto, error)
+	GetUserByEmail(email string) (*entity.UserDto, error)
 }
 
 type userUseCase struct {
@@ -72,6 +73,15 @@ func (uc *userUseCase) GetUserById(id string) (*entity.UserDto, error) {
 	userID := uuid.MustParse(id)
 
 	user, err := uc.userRepository.FindById(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return user.ToUserDto(), nil
+}
+
+func (uc *userUseCase) GetUserByEmail(email string) (*entity.UserDto, error) {
+	user, err := uc.userRepository.FindByEmail(email)
 	if err != nil {
 		return nil, err
 	}
