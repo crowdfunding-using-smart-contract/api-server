@@ -16,23 +16,24 @@ const (
 
 type User struct {
 	Base
-	Email          string `gorm:"not null;uniqueIndex"`
-	HashedPassword string `gorm:"not null"`
-	Firstname      string `gorm:"not null"`
-	Lastname       string `gorm:"not null"`
-	PhoneNumber    string `gorm:"not null"`
-	ProfileImage   string
-	Verified       bool `gorm:"not null;default:false"`
+	Email           string `gorm:"not null;uniqueIndex"`
+	HashedPassword  string `gorm:"not null"`
+	Firstname       string `gorm:"not null"`
+	Lastname        string `gorm:"not null"`
+	PhoneNumber     string `gorm:"not null"`
+	ProfileImage    string
+	IsEmailVerified bool `gorm:"not null;default:false"`
 }
 
 type UserDto struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
-	FullName     string `json:"full_name"`
-	PhoneNumber  string `json:"phone_number"`
-	ProfileImage string `json:"profile_image"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID              string `json:"id"`
+	Email           string `json:"email"`
+	FullName        string `json:"full_name"`
+	PhoneNumber     string `json:"phone_number"`
+	ProfileImage    string `json:"profile_image"`
+	IsEmailVerified bool   `json:"is_email_verified"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
 } // @name User
 
 // Secondary types
@@ -64,13 +65,14 @@ type UserLoginResponse struct {
 
 func (u *User) ToUserDto() *UserDto {
 	return &UserDto{
-		ID:           u.ID.String(),
-		Email:        u.Email,
-		FullName:     fmt.Sprintf("%s %s", u.Firstname, u.Lastname),
-		PhoneNumber:  u.PhoneNumber,
-		ProfileImage: u.ProfileImage,
-		CreatedAt:    u.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:    u.UpdatedAt.Format(time.RFC3339),
+		ID:              u.ID.String(),
+		Email:           u.Email,
+		FullName:        fmt.Sprintf("%s %s", u.Firstname, u.Lastname),
+		PhoneNumber:     u.PhoneNumber,
+		ProfileImage:    u.ProfileImage,
+		IsEmailVerified: u.IsEmailVerified,
+		CreatedAt:       u.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       u.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
