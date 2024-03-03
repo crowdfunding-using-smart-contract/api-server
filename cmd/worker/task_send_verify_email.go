@@ -47,12 +47,12 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Contex
 		return fmt.Errorf("failed to unmarshal payload: %w", asynq.SkipRetry)
 	}
 
-	user, err := processor.userUseCase.GetUserByEmail(payload.Email)
+	user, err := processor.useCases.UserUseCase.GetUserByEmail(payload.Email)
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	verifyEmail, err := processor.verifyEmailUseCase.CreateVerifyEmail(&entity.VerifyEmailCreatePayload{
+	verifyEmail, err := processor.useCases.VerifyEmailUseCase.CreateVerifyEmail(&entity.VerifyEmailCreatePayload{
 		Email:      user.Email,
 		SecretCode: helper.RandomString(32),
 	})

@@ -21,17 +21,20 @@ type TaskProcessor interface {
 }
 
 type RedisTaskProcessor struct {
-	server             *asynq.Server
-	userUseCase        usecase.UserUseCase
-	verifyEmailUseCase usecase.VerifyEmailUseCase
-	mailer             mail.EmailSender
+	server   *asynq.Server
+	mailer   mail.EmailSender
+	useCases *TaskProcessorUseCaseOptions
 }
 
 type RedisTaskProcessorOptions struct {
 	RedisOptions asynq.RedisClientOpt
 	Mailer       mail.EmailSender
-	usecase.UserUseCase
-	usecase.VerifyEmailUseCase
+	UseCases     *TaskProcessorUseCaseOptions
+}
+
+type TaskProcessorUseCaseOptions struct {
+	UserUseCase        usecase.UserUseCase
+	VerifyEmailUseCase usecase.VerifyEmailUseCase
 }
 
 func NewRedisTaskProcessor(options *RedisTaskProcessorOptions) TaskProcessor {
@@ -57,10 +60,12 @@ func NewRedisTaskProcessor(options *RedisTaskProcessorOptions) TaskProcessor {
 	)
 
 	return &RedisTaskProcessor{
-		server:             server,
-		mailer:             options.Mailer,
-		userUseCase:        options.UserUseCase,
-		verifyEmailUseCase: options.VerifyEmailUseCase,
+		server: server,
+		mailer: options.Mailer,
+		useCases: &TaskProcessorUseCaseOptions{
+			UserUseCase:        options.UseCases.UserUseCase,
+			VerifyEmailUseCase: options.UseCases.VerifyEmailUseCase,
+		},
 	}
 }
 

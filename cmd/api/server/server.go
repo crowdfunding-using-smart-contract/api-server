@@ -7,7 +7,6 @@ import (
 	"fund-o/api-server/cmd/worker"
 	"fund-o/api-server/pkg/mail"
 	"github.com/hibiken/asynq"
-	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
 	"os/signal"
@@ -142,7 +141,10 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		FromEmailAddress:  config.EMAIL_SENDER_ADDRESS,
 		FromEmailPassword: config.EMAIL_SENDER_PASSWORD,
 	}
-	go runTaskProcessor(redisOptions, gmailOptions, userUseCase, verifyEmailUseCase)
+	go runTaskProcessor(redisOptions, gmailOptions, &worker.TaskProcessorUseCaseOptions{
+		UserUseCase:        userUseCase,
+		VerifyEmailUseCase: verifyEmailUseCase,
+	})
 
 	// Handlers
 	transactionHandler := handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
@@ -240,45 +242,37 @@ func initSwaggerDocs(router *gin.RouterGroup) {
 func runTaskProcessor(
 	redisOptions asynq.RedisClientOpt,
 	gmailOptions mail.GmailSenderOptions,
-	userUseCase usecase.UserUseCase,
-	verifyEmailUseCase usecase.VerifyEmailUseCase,
+	useCases *worker.TaskProcessorUseCaseOptions,
 ) {
 	logger := log.WithFields(log.Fields{
 		"module": "task_processor",
 	})
 
-	interruptSignals := []os.Signal{
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
-	defer stop()
-
-	_, ctx = errgroup.WithContext(ctx)
-
 	mailer := mail.NewGmailSender(&gmailOptions)
 	taskProcessor := worker.NewRedisTaskProcessor(&worker.RedisTaskProcessorOptions{
-		RedisOptions:       redisOptions,
-		Mailer:             mailer,
-		UserUseCase:        userUseCase,
-		VerifyEmailUseCase: verifyEmailUseCase,
+		RedisOptions: redisOptions,
+		Mailer:       mailer,
+		UseCases:     useCases,
 	})
 
-	logger.Info("start task processor")
-	err := taskProcessor.Start()
-	if err != nil {
-		logger.Fatal("failed to start task processor")
-	}
+	logger.Info("Starting task processor...")
+	go func() {
+		err := taskProcessor.Start()
+		if err != nil {
+			logger.Fatal("failed to start task processor")
+		}
+	}()
 
-	//waitGroup.Go(func() error {
-	//	<-ctx.Done()
-	//	log.Info("graceful shutdown task processor")
-	//
-	//	taskProcessor.Shutdown()
-	//	log.Info("task processor is stopped")
-	//
-	//	return nil
-	//})
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+	log.Info("Shutting down task processor...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	taskProcessor.Shutdown()
+	<-ctx.Done()
+	log.Info("Shutting down task processor completed")
 }
