@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
+	"fund-o/api-server/cmd/worker"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/pkg/token"
+	"github.com/hibiken/asynq"
 	"net/http"
 	"time"
 
@@ -16,19 +19,22 @@ type AuthHandlerOptions struct {
 	usecase.UserUseCase
 	usecase.SessionUseCase
 	TokenMaker token.Maker
+	worker.TaskDistributor
 }
 
 type AuthHandler struct {
-	userUseCase    usecase.UserUseCase
-	sessionUseCase usecase.SessionUseCase
-	tokenMaker     token.Maker
+	userUseCase     usecase.UserUseCase
+	sessionUseCase  usecase.SessionUseCase
+	tokenMaker      token.Maker
+	taskDistributor worker.TaskDistributor
 }
 
 func NewAuthHandler(options *AuthHandlerOptions) *AuthHandler {
 	return &AuthHandler{
-		userUseCase:    options.UserUseCase,
-		sessionUseCase: options.SessionUseCase,
-		tokenMaker:     options.TokenMaker,
+		userUseCase:     options.UserUseCase,
+		sessionUseCase:  options.SessionUseCase,
+		tokenMaker:      options.TokenMaker,
+		taskDistributor: options.TaskDistributor,
 	}
 }
 
@@ -57,6 +63,18 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Email: userDto.Email,
+	}
+
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.ProcessIn(10 * time.Second),
+		asynq.Queue(worker.QueueCritical),
+	}
+
+	h.taskDistributor.DistributeTaskSendVerifyEmail(c, taskPayload, opts...)
+
 	c.JSON(makeHttpResponse(http.StatusCreated, userDto))
 }
 
@@ -81,7 +99,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	user, err := h.userUseCase.AuthenticateUser(&req)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(makeHttpErrorResponse(http.StatusNotFound, fmt.Sprintf("error authenticate user: %v", err.Error())))
 			return
 		}
@@ -161,7 +179,7 @@ func (h *AuthHandler) RenewAccessToken(c *gin.Context) {
 
 	session, err := h.sessionUseCase.GetSessionByID(refreshTokenPayload.ID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(makeHttpErrorResponse(http.StatusNotFound, err.Error()))
 			return
 		}

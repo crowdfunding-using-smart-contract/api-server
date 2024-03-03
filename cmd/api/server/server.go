@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"fund-o/api-server/cmd/worker"
+	"fund-o/api-server/pkg/mail"
+	"github.com/hibiken/asynq"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,7 +22,7 @@ import (
 	"fund-o/api-server/pkg/token"
 
 	"github.com/gin-gonic/gin"
-	logger "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	cors "github.com/rs/cors/wrapper/gin"
 
@@ -59,12 +63,12 @@ func (server *apiServer) HttpServer() *http.Server {
 }
 
 func (server *apiServer) Start() error {
-	logger.Info("Starting listening for HTTP requests...")
+	log.Info("Starting listening for HTTP requests...")
 	go func() {
-		logger.Infof("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
-		logger.Info("Starting listening for HTTP requests completed")
+		log.Infof("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
+		log.Info("Starting listening for HTTP requests completed")
 		if err := server.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatalf("Failed to listen and serve: %+v", err)
+			log.Fatalf("Failed to listen and serve: %+v", err)
 		}
 	}()
 
@@ -72,13 +76,13 @@ func (server *apiServer) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	<-quit
-	logger.Info("Shutting down server...")
+	log.Info("Shutting down server...")
 
-	logger.Info("Unregistering datasource...")
+	log.Info("Unregistering datasource...")
 	if err := server.datasource.Close(); err != nil {
 		return fmt.Errorf("error when close datasources: %v", err)
 	}
-	logger.Info("Unregistering datasource completed")
+	log.Info("Unregistering datasource completed")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -88,8 +92,8 @@ func (server *apiServer) Start() error {
 	}
 
 	<-ctx.Done()
-	logger.Info("Timeout of 1 second")
-	logger.Info("Shutting down server completed")
+	log.Info("Timeout of 1 second")
+	log.Info("Shutting down server completed")
 	return nil
 }
 
@@ -97,7 +101,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	// Makers
 	jwtMaker, err := token.NewJWTMaker(config.JWT_SECRET_KEY)
 	if err != nil {
-		logger.Fatalf("Failed to create JWT maker: %v", err)
+		log.Fatalf("Failed to create JWT maker: %v", err)
 	}
 
 	// Repositories
@@ -106,6 +110,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	sessionRepository := repository.NewSessionRepository(datasource.GetSqlDB())
 	projectRepository := repository.NewProjectRepository(datasource.GetSqlDB())
 	projectCategoryRepository := repository.NewProjectCategoryRepository(datasource.GetSqlDB())
+	verifyEmailRepository := repository.NewVerifyEmailRepository(datasource.GetSqlDB())
 
 	// UseCases
 	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
@@ -123,15 +128,31 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	projectCategoryUseCase := usecase.NewProjectCategoryUseCase(&usecase.ProjectCategoryUseCaseOptions{
 		ProjectCategoryRepository: projectCategoryRepository,
 	})
+	verifyEmailUseCase := usecase.NewVerifyEmailUseCase(&usecase.VerifyEmailUseCaseOptions{
+		VerifyEmailRepository: verifyEmailRepository,
+	})
+
+	// Task Processor
+	redisOptions := asynq.RedisClientOpt{
+		Addr: config.REDIS_ADDRESS,
+	}
+	taskDistributor := worker.NewRedisTaskDistributor(redisOptions)
+	gmailOptions := mail.GmailSenderOptions{
+		Name:              config.EMAIL_SENDER_NAME,
+		FromEmailAddress:  config.EMAIL_SENDER_ADDRESS,
+		FromEmailPassword: config.EMAIL_SENDER_PASSWORD,
+	}
+	go runTaskProcessor(redisOptions, gmailOptions, userUseCase, verifyEmailUseCase)
 
 	// Handlers
 	transactionHandler := handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
 		TransactionUseCase: transactionUseCase,
 	})
 	authHandler := handler.NewAuthHandler(&handler.AuthHandlerOptions{
-		UserUseCase:    userUseCase,
-		SessionUseCase: sessionUseCase,
-		TokenMaker:     jwtMaker,
+		UserUseCase:     userUseCase,
+		SessionUseCase:  sessionUseCase,
+		TokenMaker:      jwtMaker,
+		TaskDistributor: taskDistributor,
 	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
 		UserUseCase: userUseCase,
@@ -214,4 +235,50 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 // @name Authorization
 func initSwaggerDocs(router *gin.RouterGroup) {
 	router.GET("/openapi/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+}
+
+func runTaskProcessor(
+	redisOptions asynq.RedisClientOpt,
+	gmailOptions mail.GmailSenderOptions,
+	userUseCase usecase.UserUseCase,
+	verifyEmailUseCase usecase.VerifyEmailUseCase,
+) {
+	logger := log.WithFields(log.Fields{
+		"module": "task_processor",
+	})
+
+	interruptSignals := []os.Signal{
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
+	defer stop()
+
+	_, ctx = errgroup.WithContext(ctx)
+
+	mailer := mail.NewGmailSender(&gmailOptions)
+	taskProcessor := worker.NewRedisTaskProcessor(&worker.RedisTaskProcessorOptions{
+		RedisOptions:       redisOptions,
+		Mailer:             mailer,
+		UserUseCase:        userUseCase,
+		VerifyEmailUseCase: verifyEmailUseCase,
+	})
+
+	logger.Info("start task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		logger.Fatal("failed to start task processor")
+	}
+
+	//waitGroup.Go(func() error {
+	//	<-ctx.Done()
+	//	log.Info("graceful shutdown task processor")
+	//
+	//	taskProcessor.Shutdown()
+	//	log.Info("task processor is stopped")
+	//
+	//	return nil
+	//})
 }
