@@ -18,7 +18,6 @@ require (
 	github.com/swaggo/gin-swagger v1.3.2
 	github.com/swaggo/swag v1.16.2
 	golang.org/x/crypto v0.16.0
-	golang.org/x/sync v0.6.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
 )
