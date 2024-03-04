@@ -4,7 +4,7 @@ on: [push, pull_request]
 env:
   email_sender_name: ${{ vars.EMAIL_SENDER_NAME }}
   email_sender_address: ${{ vars.EMAIL_SENDER_ADDRESS }}
-  email_sender_password: ${{ vars.EMAIL_SENDER_PASSWORD
+  email_sender_password: ${{ vars.EMAIL_SENDER_PASSWORD }}
 
 jobs:
   run_unit_tests:
