@@ -14,6 +14,7 @@ type UserUseCase interface {
 	AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error)
 	GetUserById(id string) (*entity.UserDto, error)
 	GetUserByEmail(email string) (*entity.UserDto, error)
+	UpdateUserByID(id string, user *entity.UserUpdatePayload) (*entity.UserDto, error)
 }
 
 type userUseCase struct {
@@ -87,4 +88,24 @@ func (uc *userUseCase) GetUserByEmail(email string) (*entity.UserDto, error) {
 	}
 
 	return user.ToUserDto(), nil
+}
+
+func (uc *userUseCase) UpdateUserByID(id string, user *entity.UserUpdatePayload) (*entity.UserDto, error) {
+	userID := uuid.MustParse(id)
+
+	payload := entity.User{
+		Email:           user.Email,
+		Firstname:       user.Firstname,
+		Lastname:        user.Lastname,
+		PhoneNumber:     user.PhoneNumber,
+		ProfileImage:    user.ProfileImage,
+		IsEmailVerified: user.IsEmailVerified,
+	}
+
+	updatedUser, err := uc.userRepository.UpdateByID(userID, &payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser.ToUserDto(), nil
 }
