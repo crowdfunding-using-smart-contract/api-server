@@ -2,9 +2,11 @@ package repository
 
 import (
 	"fund-o/api-server/internal/entity"
+	"github.com/rs/zerolog"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -15,13 +17,11 @@ type ProjectRepository interface {
 
 type projectRepository struct {
 	db     *gorm.DB
-	logger *log.Entry
+	logger zerolog.Logger
 }
 
 func NewProjectRepository(db *gorm.DB) ProjectRepository {
-	logger := log.WithFields(log.Fields{
-		"module": "project_repository",
-	})
+	logger := log.With().Str("module", "project_repository").Logger()
 	return &projectRepository{db, logger}
 }
 
@@ -32,7 +32,7 @@ func (repo *projectRepository) Create(project *entity.Project) (*entity.Project,
 		Create(&project).
 		First(&project)
 	if result.Error != nil {
-		repo.logger.Errorf("Failed to create project: %v", result.Error)
+		repo.logger.Error().Err(result.Error).Msg("failed to create project")
 		return nil, result.Error
 	}
 
@@ -48,6 +48,7 @@ func (repo *projectRepository) FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Pro
 		Where("owner_id = ?", ownerID).
 		Find(&projects)
 	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to list projects")
 		return nil, result.Error
 	}
 
