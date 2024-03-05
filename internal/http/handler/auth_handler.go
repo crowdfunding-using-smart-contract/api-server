@@ -18,23 +18,26 @@ import (
 type AuthHandlerOptions struct {
 	usecase.UserUseCase
 	usecase.SessionUseCase
+	usecase.VerifyEmailUseCase
 	TokenMaker token.Maker
 	worker.TaskDistributor
 }
 
 type AuthHandler struct {
-	userUseCase     usecase.UserUseCase
-	sessionUseCase  usecase.SessionUseCase
-	tokenMaker      token.Maker
-	taskDistributor worker.TaskDistributor
+	userUseCase        usecase.UserUseCase
+	sessionUseCase     usecase.SessionUseCase
+	verifyEmailUseCase usecase.VerifyEmailUseCase
+	tokenMaker         token.Maker
+	taskDistributor    worker.TaskDistributor
 }
 
 func NewAuthHandler(options *AuthHandlerOptions) *AuthHandler {
 	return &AuthHandler{
-		userUseCase:     options.UserUseCase,
-		sessionUseCase:  options.SessionUseCase,
-		tokenMaker:      options.TokenMaker,
-		taskDistributor: options.TaskDistributor,
+		userUseCase:        options.UserUseCase,
+		sessionUseCase:     options.SessionUseCase,
+		verifyEmailUseCase: options.VerifyEmailUseCase,
+		tokenMaker:         options.TokenMaker,
+		taskDistributor:    options.TaskDistributor,
 	}
 }
 
@@ -43,7 +46,7 @@ func NewAuthHandler(options *AuthHandlerOptions) *AuthHandler {
 // @description Create user with specific user data and role
 // @tags auth
 // @id Register
-// @accpet json
+// @accept json
 // @produce json
 // @param User body entity.UserCreatePayload true "User data to be created"
 // @response 200 {object} handler.ResultResponse[entity.UserDto] "OK"
@@ -83,7 +86,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @description Authenticate user with email and password
 // @tags auth
 // @id Login
-// @accpet json
+// @accept json
 // @produce json
 // @param User body entity.UserLoginPayload true "User data to be authenticated"
 // @response 200 {object} handler.ResultResponse[entity.UserLoginResponse] "OK"
@@ -158,7 +161,7 @@ type RenewAccessTokenResponse struct {
 // @description Renew access token with refresh token
 // @tags auth
 // @id RenewAccessToken
-// @accpet json
+// @accept json
 // @produce json
 // @param User body handler.RenewAccessTokenPayload true "Refresh token to be renewed"
 // @response 200 {object} handler.ResultResponse[handler.RenewAccessTokenResponse] "OK"
@@ -218,4 +221,105 @@ func (h *AuthHandler) RenewAccessToken(c *gin.Context) {
 	}
 
 	c.JSON(makeHttpResponse(http.StatusOK, response))
+}
+
+type SendVerifyEmailPayload struct {
+	Email string `json:"email" binding:"required"`
+}
+
+// SendVerifyEmail godoc
+// @summary Send Verify Email
+// @description Send verify email to user email
+// @tags auth
+// @id SendVerifyEmail
+// @accept json
+// @produce json
+// @param User body handler.SendVerifyEmailPayload true "User email to be verified"
+// @response 200 {object} handler.MessageResponse "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/send-verify-email [post]
+func (h *AuthHandler) SendVerifyEmail(c *gin.Context) {
+	var req SendVerifyEmailPayload
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	user, err := h.userUseCase.GetUserByEmail(req.Email)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	if user.IsEmailVerified {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, "email already verified"))
+		return
+	}
+
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Email: user.Email,
+	}
+
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.ProcessIn(3 * time.Second),
+		asynq.Queue(worker.QueueCritical),
+	}
+
+	h.taskDistributor.DistributeTaskSendVerifyEmail(c, taskPayload, opts...)
+
+	c.JSON(makeHttpMessageResponse(http.StatusOK, "verify email sent"))
+}
+
+// VerifyEmail godoc
+// @summary Verify Email
+// @description Verify email with email id and secret code
+// @tags auth
+// @id VerifyEmail
+// @accept json
+// @produce json
+// @param email_id query string true "Email ID to be verified"
+// @param secret_code query string true "Secret Code to be verified"
+// @response 200 {object} handler.ResultResponse[entity.UserDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/verify-email [get]
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	emailID := c.Query("email_id")
+	secretCode := c.Query("secret_code")
+
+	if emailID == "" || secretCode == "" {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, "invalid email id or secret code"))
+		return
+	}
+
+	payload := entity.VerifyEmailUpdatePayload{
+		ID:         emailID,
+		SecretCode: secretCode,
+	}
+
+	verifyEmail, err := h.verifyEmailUseCase.VerifyEmail(&payload)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	user, err := h.userUseCase.GetUserByEmail(verifyEmail.Email)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	updatedUser, err := h.userUseCase.UpdateUserByID(user.ID, &entity.UserUpdatePayload{
+		IsEmailVerified: true,
+	})
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+		return
+	}
+
+	// TODO: navigate to frontend page instead
+	c.JSON(makeHttpResponse(http.StatusOK, updatedUser))
 }

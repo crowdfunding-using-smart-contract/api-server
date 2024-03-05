@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"fund-o/api-server/cmd/worker"
 	"fund-o/api-server/pkg/mail"
-	"github.com/hibiken/asynq"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/hibiken/asynq"
 
 	"fund-o/api-server/internal/datasource"
 	"fund-o/api-server/internal/datasource/repository"
@@ -151,10 +152,11 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		TransactionUseCase: transactionUseCase,
 	})
 	authHandler := handler.NewAuthHandler(&handler.AuthHandlerOptions{
-		UserUseCase:     userUseCase,
-		SessionUseCase:  sessionUseCase,
-		TokenMaker:      jwtMaker,
-		TaskDistributor: taskDistributor,
+		UserUseCase:        userUseCase,
+		SessionUseCase:     sessionUseCase,
+		VerifyEmailUseCase: verifyEmailUseCase,
+		TokenMaker:         jwtMaker,
+		TaskDistributor:    taskDistributor,
 	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
 		UserUseCase: userUseCase,
@@ -198,6 +200,8 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		authRoute.POST("/register", authHandler.Register)
 		authRoute.POST("/login", authHandler.Login)
 		authRoute.POST("/renew-token", authHandler.RenewAccessToken)
+		authRoute.GET("/verify-email", authHandler.VerifyEmail)
+		authRoute.POST("/send-verify-email", authHandler.SendVerifyEmail)
 		// authRoute.POST("/login-with-google", func(c *gin.Context) {
 		// 	c.Redirect(http.StatusTemporaryRedirect, )
 		// })
