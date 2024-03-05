@@ -27,6 +27,11 @@ type VerifyEmailCreatePayload struct {
 	SecretCode string `json:"secret_code" binding:"required"`
 } // @name VerifyEmailCreatePayload
 
+type VerifyEmailUpdatePayload struct {
+	ID         string `json:"id" binding:"required"`
+	SecretCode string `json:"secret_code" binding:"required"`
+} // @name VerifyEmailUpdatePayload
+
 // Parse functions
 
 func (v *VerifyEmail) ToVerifyEmailDto() *VerifyEmailDto {
