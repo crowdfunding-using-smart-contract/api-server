@@ -47,6 +47,15 @@ type UserCreatePayload struct {
 	PasswordConfirmation string `json:"password_confirmation" binding:"required"`
 } // @name UserCreatePayload
 
+type UserUpdatePayload struct {
+	Email           string `json:"email"`
+	Firstname       string `json:"firstname"`
+	Lastname        string `json:"lastname"`
+	PhoneNumber     string `json:"phone_number"`
+	ProfileImage    string `json:"profile_image"`
+	IsEmailVerified bool   `json:"is_email_verified"`
+} // @name UserUpdatePayload
+
 type UserLoginPayload struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
