@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/helper"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hibiken/asynq"
@@ -63,11 +64,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Contex
 	subject := "Welcome to Simple Bank"
 	// TODO: replace this URL with an environment variable that points to a front-end page
 
-	host := fmt.Sprintf("http://%s:%d%s",
-		processor.apiServerConfig.APP_HOST,
-		processor.apiServerConfig.APP_PORT,
-		processor.apiServerConfig.APP_PATH_PREFIX,
-	)
+	host := "http://localhost:3000/api/v1"
 	verifyUrl := fmt.Sprintf("%s/auth/verify-email?email_id=%s&secret_code=%s", host, verifyEmail.ID, verifyEmail.SecretCode)
 	content := fmt.Sprintf(`Hello %s,<br/>
 	Thank you for registering with us!<br/>

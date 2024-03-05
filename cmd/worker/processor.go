@@ -2,9 +2,9 @@ package worker
 
 import (
 	"context"
-	"fund-o/api-server/cmd/api/server"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/pkg/mail"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hibiken/asynq"
@@ -22,17 +22,15 @@ type TaskProcessor interface {
 }
 
 type RedisTaskProcessor struct {
-	server          *asynq.Server
-	mailer          mail.EmailSender
-	useCases        *TaskProcessorUseCaseOptions
-	apiServerConfig *server.ApiServerConfig
+	server   *asynq.Server
+	mailer   mail.EmailSender
+	useCases *TaskProcessorUseCaseOptions
 }
 
 type RedisTaskProcessorOptions struct {
-	RedisOptions    asynq.RedisClientOpt
-	Mailer          mail.EmailSender
-	UseCases        *TaskProcessorUseCaseOptions
-	ApiServerConfig *server.ApiServerConfig
+	RedisOptions asynq.RedisClientOpt
+	Mailer       mail.EmailSender
+	UseCases     *TaskProcessorUseCaseOptions
 }
 
 type TaskProcessorUseCaseOptions struct {
