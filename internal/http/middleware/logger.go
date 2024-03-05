@@ -5,20 +5,22 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
-	logger "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		logger.WithFields(logger.Fields{
-			"method":        c.Request.Method,
-			"url":           c.Request.URL.Path,
-			"hostname":      c.Request.Host,
-			"remoteAddress": strings.Split(c.Request.RemoteAddr, ":")[0],
-			"remotePort":    strings.Split(c.Request.RemoteAddr, ":")[1],
-		}).Infof("incoming request")
+		ip := c.ClientIP()
+		remoteArress := strings.Split(c.Request.RemoteAddr, ":")
 
+		log.Info().
+			Str("method", c.Request.Method).
+			Str("url", c.Request.URL.Path).
+			Str("hostname", c.Request.Host).
+			Str("ip", ip).
+			Str("remote_address", remoteArress[0]).
+			Str("remote_port", remoteArress[1]).
+			Msg("incoming request")
 		c.Next()
 	}
 }
@@ -29,9 +31,9 @@ func ResponseLogger() gin.HandlerFunc {
 
 		c.Next()
 
-		logger.WithFields(logger.Fields{
-			"statusCode":   c.Writer.Status(),
-			"responseTime": time.Since(now),
-		}).Info("reqeust completed")
+		log.Info().
+			Int("status_code", c.Writer.Status()).
+			Dur("response_time", time.Since(now)).
+			Msg("request completed")
 	}
 }

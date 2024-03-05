@@ -22,7 +22,7 @@ import (
 	"fund-o/api-server/pkg/token"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 
 	cors "github.com/rs/cors/wrapper/gin"
 
@@ -63,12 +63,12 @@ func (server *apiServer) HttpServer() *http.Server {
 }
 
 func (server *apiServer) Start() error {
-	log.Info("Starting listening for HTTP requests...")
+	log.Info().Msg("Starting listening for HTTP requests...")
 	go func() {
-		log.Infof("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
-		log.Info("Starting listening for HTTP requests completed")
+		log.Info().Msgf("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
+		log.Info().Msg("Starting listening for HTTP requests completed")
 		if err := server.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Failed to listen and serve: %+v", err)
+			log.Fatal().Err(err).Msg("Failed to listen and serve")
 		}
 	}()
 
@@ -76,13 +76,13 @@ func (server *apiServer) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	<-quit
-	log.Info("Shutting down server...")
+	log.Info().Msg("Shutting down server...")
 
-	log.Info("Unregistering datasource...")
+	log.Info().Msg("Unregistering datasource...")
 	if err := server.datasource.Close(); err != nil {
 		return fmt.Errorf("error when close datasources: %v", err)
 	}
-	log.Info("Unregistering datasource completed")
+	log.Info().Msg("Unregistering datasource completed")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -92,8 +92,8 @@ func (server *apiServer) Start() error {
 	}
 
 	<-ctx.Done()
-	log.Info("Timeout of 1 second")
-	log.Info("Shutting down server completed")
+	log.Info().Msg("Timeout of 1 second")
+	log.Info().Msg("Shutting down server completed")
 	return nil
 }
 
@@ -101,7 +101,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	// Makers
 	jwtMaker, err := token.NewJWTMaker(config.JWT_SECRET_KEY)
 	if err != nil {
-		log.Fatalf("Failed to create JWT maker: %v", err)
+		log.Fatal().Err(err).Msg("Failed to create JWT maker")
 	}
 
 	// Repositories
@@ -248,10 +248,6 @@ func runTaskProcessor(
 	gmailOptions mail.GmailSenderOptions,
 	useCases *worker.TaskProcessorUseCaseOptions,
 ) {
-	logger := log.WithFields(log.Fields{
-		"module": "task_processor",
-	})
-
 	mailer := mail.NewGmailSender(&gmailOptions)
 	taskProcessor := worker.NewRedisTaskProcessor(&worker.RedisTaskProcessorOptions{
 		RedisOptions: redisOptions,
@@ -259,24 +255,8 @@ func runTaskProcessor(
 		UseCases:     useCases,
 	})
 
-	logger.Info("Starting task processor...")
-	go func() {
-		err := taskProcessor.Start()
-		if err != nil {
-			logger.Fatal("failed to start task processor")
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
-	<-quit
-	log.Info("Shutting down task processor...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-	defer cancel()
-
-	taskProcessor.Shutdown()
-	<-ctx.Done()
-	log.Info("Shutting down task processor completed")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
 }

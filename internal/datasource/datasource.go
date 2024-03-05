@@ -3,7 +3,7 @@ package datasource
 import (
 	"fund-o/api-server/internal/datasource/driver"
 
-	logger "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +25,7 @@ func NewDatasourceContext(config *DatasourceConfig) Datasource {
 
 	err := sqlDBContext.Connect()
 	if err != nil {
-		logger.Panicf("Failed to connect to SQL database: %v", err)
+		log.Panic().Err(err).Msg("Failed to connect to SQL database")
 	}
 
 	return &datasource{
