@@ -27,6 +27,9 @@ const docTemplate = `{
         "/auth/login": {
             "post": {
                 "description": "Authenticate user with email and password",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -71,6 +74,9 @@ const docTemplate = `{
         "/auth/register": {
             "post": {
                 "description": "Create user with specific user data and role",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -115,6 +121,9 @@ const docTemplate = `{
         "/auth/renew-token": {
             "post": {
                 "description": "Renew access token with refresh token",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -139,6 +148,105 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/ResultResponse-internal_http_handler_RenewAccessTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/send-verify-email": {
+            "post": {
+                "description": "Send verify email to user email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Send Verify Email",
+                "operationId": "SendVerifyEmail",
+                "parameters": [
+                    {
+                        "description": "User email to be verified",
+                        "name": "User",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_http_handler.SendVerifyEmailPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-email": {
+            "get": {
+                "description": "Verify email with email id and secret code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify Email",
+                "operationId": "VerifyEmail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email ID to be verified",
+                        "name": "email_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Secret Code to be verified",
+                        "name": "secret_code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-User"
                         }
                     },
                     "400": {
@@ -754,6 +862,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "is_email_verified": {
+                    "type": "boolean"
+                },
                 "phone_number": {
                     "type": "string"
                 },
@@ -901,6 +1012,17 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "internal_http_handler.SendVerifyEmailPayload": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -919,7 +1041,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "",
 	Schemes:          []string{"http", "https"},
 	Title:            "FundO API",
-	Description:      "This is a sample server server.",
+	Description:      "This is a sample server.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
