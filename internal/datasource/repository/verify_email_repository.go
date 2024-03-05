@@ -8,6 +8,8 @@ import (
 
 type VerifyEmailRepository interface {
 	Create(verifyEmail *entity.VerifyEmail) (*entity.VerifyEmail, error)
+	FindByID(id string) (*entity.VerifyEmail, error)
+	UpdateByID(id string, verifyEmail *entity.VerifyEmail) (*entity.VerifyEmail, error)
 }
 
 type verifyEmailRepository struct {
@@ -25,6 +27,23 @@ func NewVerifyEmailRepository(db *gorm.DB) VerifyEmailRepository {
 func (repo *verifyEmailRepository) Create(verifyEmail *entity.VerifyEmail) (*entity.VerifyEmail, error) {
 	if result := repo.db.Create(&verifyEmail); result.Error != nil {
 		repo.logger.Errorf("Failed to create verify email: %v", result.Error)
+		return nil, result.Error
+	}
+	return verifyEmail, nil
+}
+
+func (repo *verifyEmailRepository) FindByID(id string) (*entity.VerifyEmail, error) {
+	var ve entity.VerifyEmail
+	if result := repo.db.Where("id = ?", id).First(&ve); result.Error != nil {
+		repo.logger.Errorf("Failed to find verify email by id: %v", result.Error)
+		return nil, result.Error
+	}
+	return &ve, nil
+}
+
+func (repo *verifyEmailRepository) UpdateByID(id string, verifyEmail *entity.VerifyEmail) (*entity.VerifyEmail, error) {
+	if result := repo.db.Model(&entity.VerifyEmail{}).Where("id = ?", id).Updates(verifyEmail); result.Error != nil {
+		repo.logger.Errorf("Failed to update verify email by id: %v", result.Error)
 		return nil, result.Error
 	}
 	return verifyEmail, nil
