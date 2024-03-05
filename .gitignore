@@ -12,8 +12,9 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
-# tmp/
+vendor/
+tmp/
+Temp/
 
 # Ignore ENV file
 *.env
