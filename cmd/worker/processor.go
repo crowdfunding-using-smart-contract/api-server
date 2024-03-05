@@ -4,10 +4,13 @@ import (
 	"context"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/pkg/mail"
-
-	log "github.com/sirupsen/logrus"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -17,7 +20,6 @@ const (
 
 type TaskProcessor interface {
 	Start() error
-	Shutdown()
 	ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error
 }
 
@@ -25,6 +27,7 @@ type RedisTaskProcessor struct {
 	server   *asynq.Server
 	mailer   mail.EmailSender
 	useCases *TaskProcessorUseCaseOptions
+	logger   *Logger
 }
 
 type RedisTaskProcessorOptions struct {
@@ -39,22 +42,21 @@ type TaskProcessorUseCaseOptions struct {
 }
 
 func NewRedisTaskProcessor(options *RedisTaskProcessorOptions) TaskProcessor {
-	logger := log.WithFields(log.Fields{
-		"module": "task_processor",
-	})
+	logger := NewWorkerLogger("processor")
+	redis.SetLogger(logger)
 
 	server := asynq.NewServer(
-		options.RedisOptions,
+		asynq.RedisClientOpt{},
 		asynq.Config{
 			Queues: map[string]int{
 				QueueCritical: 10,
 				QueueDefault:  5,
 			},
 			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
-				logger.WithError(err).WithFields(log.Fields{
-					"type":    task.Type(),
-					"payload": string(task.Payload()),
-				}).Error("process task failed")
+				logger.log.Error().Err(err).
+					Str("type", task.Type()).
+					Bytes("payload", task.Payload()).
+					Msg("process task failed")
 			}),
 			Logger: logger,
 		},
@@ -67,17 +69,35 @@ func NewRedisTaskProcessor(options *RedisTaskProcessorOptions) TaskProcessor {
 			UserUseCase:        options.UseCases.UserUseCase,
 			VerifyEmailUseCase: options.UseCases.VerifyEmailUseCase,
 		},
+		logger: logger,
 	}
 }
 
 func (processor *RedisTaskProcessor) Start() error {
-	mux := asynq.NewServeMux()
+	log := processor.logger.log
 
+	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskSendVerifyEmail, processor.ProcessTaskSendVerifyEmail)
 
-	return processor.server.Start(mux)
-}
+	log.Info().Msg("Starting task processor...")
+	go func() {
+		err := processor.server.Start(mux)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to start task processor")
+		}
+	}()
 
-func (processor *RedisTaskProcessor) Shutdown() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+	log.Info().Msg("Shutting down task processor...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
 	processor.server.Shutdown()
+	<-ctx.Done()
+
+	return nil
 }

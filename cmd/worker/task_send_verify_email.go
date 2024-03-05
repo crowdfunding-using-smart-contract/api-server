@@ -7,8 +7,6 @@ import (
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/helper"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/hibiken/asynq"
 )
 
@@ -23,23 +21,24 @@ func (distributor *RedisTaskDistributor) DistributeTaskSendVerifyEmail(
 	payload *PayloadSendVerifyEmail,
 	opts ...asynq.Option,
 ) {
+	log := distributor.logger.log
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		log.Errorf("failed to marshal task payload: %+v", err)
+		log.Error().Err(err).Msg("failed to marshal task payload")
 	}
 
 	task := asynq.NewTask(TaskSendVerifyEmail, jsonPayload, opts...)
 	info, err := distributor.client.EnqueueContext(ctx, task)
 	if err != nil {
-		log.Errorf("failed to enqueue task: %+v", err)
+		log.Error().Err(err).Msg("failed to enqueue task")
 	}
 
-	log.WithFields(log.Fields{
-		"type":      task.Type(),
-		"payload":   string(task.Payload()),
-		"queue":     info.Queue,
-		"max_retry": info.MaxRetry,
-	}).Info("enqueued task")
+	log.Info().
+		Str("type", task.Type()).
+		Bytes("payload", task.Payload()).
+		Str("queue", info.Queue).
+		Int("max_retry", info.MaxRetry).
+		Msg("enqueued task")
 }
 
 func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Context, task *asynq.Task) error {
@@ -77,10 +76,10 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Contex
 		return fmt.Errorf("failed to send verify email: %w", err)
 	}
 
-	log.WithFields(log.Fields{
-		"type":    task.Type(),
-		"payload": string(task.Payload()),
-		"email":   user.Email,
-	}).Info("processed task")
+	processor.logger.log.Info().
+		Str("type", task.Type()).
+		Bytes("payload", task.Payload()).
+		Str("email", user.Email).
+		Msg("processed task")
 	return nil
 }
