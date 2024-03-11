@@ -5,6 +5,7 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/password"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -41,13 +42,21 @@ func (uc *userUseCase) CreateUser(user *entity.UserCreatePayload) (*entity.UserD
 		return nil, err
 	}
 
+	birthDate, err := time.Parse(time.RFC3339, user.BirthDate)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := entity.User{
 		Email:          user.Email,
 		Firstname:      user.Firstname,
 		Lastname:       user.Lastname,
-		PhoneNumber:    user.PhoneNumber,
 		HashedPassword: hashedPassword,
+		BirthDate:      birthDate,
+		Gender:         entity.ParseGender(user.Gender),
 	}
+
+	fmt.Println("payload", payload.Gender)
 
 	newUser, err := uc.userRepository.Create(&payload)
 	if err != nil {
@@ -97,7 +106,6 @@ func (uc *userUseCase) UpdateUserByID(id string, user *entity.UserUpdatePayload)
 		Email:           user.Email,
 		Firstname:       user.Firstname,
 		Lastname:        user.Lastname,
-		PhoneNumber:     user.PhoneNumber,
 		ProfileImage:    user.ProfileImage,
 		IsEmailVerified: user.IsEmailVerified,
 	}

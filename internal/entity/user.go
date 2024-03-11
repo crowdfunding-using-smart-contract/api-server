@@ -8,10 +8,17 @@ import (
 )
 
 type UserRole int
+type Gender int
 
 const (
 	Backer UserRole = iota + 1
 	Creator
+)
+
+const (
+	Male Gender = iota + 1
+	Female
+	NotSay
 )
 
 type User struct {
@@ -20,17 +27,19 @@ type User struct {
 	HashedPassword  string `gorm:"not null"`
 	Firstname       string `gorm:"not null"`
 	Lastname        string `gorm:"not null"`
-	PhoneNumber     string `gorm:"not null"`
 	ProfileImage    string
-	IsEmailVerified bool `gorm:"not null;default:false"`
+	BirthDate       time.Time `gorm:"not null"`
+	Gender          Gender    `gorm:"not null;default:3"`
+	IsEmailVerified bool      `gorm:"not null;default:false"`
 }
 
 type UserDto struct {
 	ID              string `json:"id"`
 	Email           string `json:"email"`
 	FullName        string `json:"full_name"`
-	PhoneNumber     string `json:"phone_number"`
 	ProfileImage    string `json:"profile_image"`
+	BirthDate       string `json:"birthdate"`
+	Gender          string `json:"gender"`
 	IsEmailVerified bool   `json:"is_email_verified"`
 	CreatedAt       string `json:"created_at"`
 	UpdatedAt       string `json:"updated_at"`
@@ -40,18 +49,18 @@ type UserDto struct {
 
 type UserCreatePayload struct {
 	Email                string `json:"email" binding:"required"`
-	Firstname            string `json:"firstname" binding:"required"`
-	Lastname             string `json:"lastname" binding:"required"`
-	PhoneNumber          string `json:"phone_number" binding:"required"`
 	Password             string `json:"password" binding:"required"`
 	PasswordConfirmation string `json:"password_confirmation" binding:"required"`
+	Firstname            string `json:"firstname" binding:"required"`
+	Lastname             string `json:"lastname" binding:"required"`
+	BirthDate            string `json:"birthdate" binding:"required"`
+	Gender               string `json:"gender" binding:"required"`
 } // @name UserCreatePayload
 
 type UserUpdatePayload struct {
 	Email           string `json:"email"`
 	Firstname       string `json:"firstname"`
 	Lastname        string `json:"lastname"`
-	PhoneNumber     string `json:"phone_number"`
 	ProfileImage    string `json:"profile_image"`
 	IsEmailVerified bool   `json:"is_email_verified"`
 } // @name UserUpdatePayload
@@ -77,12 +86,17 @@ func (u *User) ToUserDto() *UserDto {
 		ID:              u.ID.String(),
 		Email:           u.Email,
 		FullName:        fmt.Sprintf("%s %s", u.Firstname, u.Lastname),
-		PhoneNumber:     u.PhoneNumber,
 		ProfileImage:    u.ProfileImage,
+		BirthDate:       u.BirthDate.Format(time.RFC3339),
+		Gender:          u.Gender.String(),
 		IsEmailVerified: u.IsEmailVerified,
 		CreatedAt:       u.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:       u.UpdatedAt.Format(time.RFC3339),
 	}
+}
+
+func (g Gender) String() string {
+	return [...]string{"", "M", "F", "NS"}[g]
 }
 
 func (r UserRole) String() string {
@@ -101,4 +115,19 @@ var ParseUserRole = func(str string) UserRole {
 	}
 
 	return role
+}
+
+var ParseGender = func(str string) Gender {
+	mapString := map[string]Gender{
+		"m":  Male,
+		"f":  Female,
+		"ns": NotSay,
+	}
+
+	gender, ok := helper.ParseString(mapString, str)
+	if !ok {
+		return NotSay
+	}
+
+	return gender
 }

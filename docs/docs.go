@@ -850,6 +850,9 @@ const docTemplate = `{
         "User": {
             "type": "object",
             "properties": {
+                "birthdate": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -859,14 +862,14 @@ const docTemplate = `{
                 "full_name": {
                     "type": "string"
                 },
+                "gender": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
                 "is_email_verified": {
                     "type": "boolean"
-                },
-                "phone_number": {
-                    "type": "string"
                 },
                 "profile_image": {
                     "type": "string"
@@ -879,18 +882,25 @@ const docTemplate = `{
         "UserCreatePayload": {
             "type": "object",
             "required": [
+                "birthdate",
                 "email",
                 "firstname",
+                "gender",
                 "lastname",
                 "password",
-                "password_confirmation",
-                "phone_number"
+                "password_confirmation"
             ],
             "properties": {
+                "birthdate": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
                 "firstname": {
+                    "type": "string"
+                },
+                "gender": {
                     "type": "string"
                 },
                 "lastname": {
@@ -900,9 +910,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password_confirmation": {
-                    "type": "string"
-                },
-                "phone_number": {
                     "type": "string"
                 }
             }
