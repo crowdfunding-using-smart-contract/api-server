@@ -2,8 +2,9 @@ package mail
 
 import (
 	"fmt"
-	"github.com/jordan-wright/email"
 	"net/smtp"
+
+	"github.com/jordan-wright/email"
 )
 
 const (

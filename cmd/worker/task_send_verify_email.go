@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/helper"
+	"fund-o/api-server/pkg/mail"
 
 	"github.com/hibiken/asynq"
 )
@@ -65,10 +66,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Contex
 
 	host := "http://localhost:3000/api/v1"
 	verifyUrl := fmt.Sprintf("%s/auth/verify-email?email_id=%s&secret_code=%s", host, verifyEmail.ID, verifyEmail.SecretCode)
-	content := fmt.Sprintf(`Hello %s,<br/>
-	Thank you for registering with us!<br/>
-	Please <a href="%s">click here</a> to verify your email address.<br/>
-	`, user.FullName, verifyUrl)
+	content := mail.NewVerifyEmailTempate(verifyUrl)
 	to := []string{user.Email}
 
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil)

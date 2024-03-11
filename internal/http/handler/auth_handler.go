@@ -7,9 +7,10 @@ import (
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/pkg/token"
-	"github.com/hibiken/asynq"
 	"net/http"
 	"time"
+
+	"github.com/hibiken/asynq"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -321,5 +322,6 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 	}
 
 	// TODO: navigate to frontend page instead
+	c.Redirect(http.StatusFound, "http://localhost:5173/profile")
 	c.JSON(makeHttpResponse(http.StatusOK, updatedUser))
 }
