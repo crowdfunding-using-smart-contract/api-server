@@ -1,17 +1,22 @@
 package logger
 
-import "github.com/sirupsen/logrus"
+import (
+	"os"
+	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+)
 
 type LoggerConfig struct {
 	Env string
 }
 
 func InitLogger() {
-	logrus.SetLevel(logrus.TraceLevel)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:          true,
-		TimestampFormat:        "2006-01-02 15:04:05",
-		ForceColors:            true,
-		DisableLevelTruncation: true,
-	})
+	consoleWriter := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: time.RFC3339,
+	}
+
+	log.Logger = log.Output(consoleWriter)
 }

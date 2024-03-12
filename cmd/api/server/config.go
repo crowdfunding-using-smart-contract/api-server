@@ -15,4 +15,8 @@ type ApiServerConfig struct {
 	JWT_SECRET_KEY               string `mapstructure:"JWT_SECRET_KEY"`
 	GOOGLE_CLIENT_ID             string `mapstructure:"GOOGLE_CLIENT_ID"`
 	GOOGLE_CLIENT_SECRET         string `mapstructure:"GOOGLE_CLIENT_SECRET"`
+	REDIS_ADDRESS                string `mapstructure:"REDIS_ADDRESS"`
+	EMAIL_SENDER_NAME            string `mapstructure:"EMAIL_SENDER_NAME"`
+	EMAIL_SENDER_ADDRESS         string `mapstructure:"EMAIL_SENDER_ADDRESS"`
+	EMAIL_SENDER_PASSWORD        string `mapstructure:"EMAIL_SENDER_PASSWORD"`
 }

@@ -7,7 +7,7 @@ import (
 	"fund-o/api-server/pkg/logger"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 func main() {
 	appConfig, err := config.LoadAppConfig(".")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Failed to load app config")
 	}
 
 	datasources := datasource.NewDatasourceContext(&appConfig.DatasourceConfig)
@@ -25,6 +25,6 @@ func main() {
 	gin.SetMode(appConfig.GIN_MODE)
 	server := server.NewApiServer(&appConfig.ApiServerConfig, datasources)
 	if err := server.Start(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Failed to start API server")
 	}
 }

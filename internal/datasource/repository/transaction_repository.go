@@ -3,10 +3,11 @@ package repository
 import (
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/pagination"
+	"github.com/rs/zerolog"
 
 	"gorm.io/gorm"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type TransactionRepository interface {
@@ -18,19 +19,17 @@ type TransactionRepository interface {
 
 type transactionRepository struct {
 	db     *gorm.DB
-	logger *log.Entry
+	logger zerolog.Logger
 }
 
 func NewTransactionRepository(db *gorm.DB) TransactionRepository {
-	logger := log.WithFields(log.Fields{
-		"module": "transaction_repository",
-	})
+	logger := log.With().Str("module", "transaction_repository").Logger()
 	return &transactionRepository{db, logger}
 }
 
 func (repo *transactionRepository) Create(transaction *entity.Transaction) (*entity.Transaction, error) {
 	if result := repo.db.Create(&transaction); result.Error != nil {
-		repo.logger.Errorf("Failed to create transaction: %v", result.Error)
+		repo.logger.Error().Err(result.Error).Msg("failed to create transaction")
 		return nil, result.Error
 	}
 
@@ -40,7 +39,7 @@ func (repo *transactionRepository) Create(transaction *entity.Transaction) (*ent
 func (repo *transactionRepository) FindByRefCode(refCode string) (*entity.Transaction, error) {
 	var transaction entity.Transaction
 	if result := repo.db.Where("ref_code = ?", refCode).First(&transaction); result.Error != nil {
-		repo.logger.Errorf("Failed to get transaction by reference code: %v", result.Error)
+		repo.logger.Error().Err(result.Error).Msg("failed to find transaction by reference code: " + refCode)
 		return nil, result.Error
 	}
 
@@ -48,9 +47,8 @@ func (repo *transactionRepository) FindByRefCode(refCode string) (*entity.Transa
 }
 
 func (repo *transactionRepository) List(findOptions pagination.PaginateFindOptions) (transactions []entity.Transaction) {
-	// var transactions []entity.Transaction
 	if result := repo.db.Limit(findOptions.Limit).Offset(findOptions.Skip).Find(&transactions); result.Error != nil {
-		repo.logger.Errorf("Failed to list transactions: %v", result.Error)
+		repo.logger.Error().Err(result.Error).Msg("failed to list transactions")
 		return
 	}
 
@@ -60,7 +58,7 @@ func (repo *transactionRepository) List(findOptions pagination.PaginateFindOptio
 func (repo *transactionRepository) Count() int64 {
 	var count int64
 	if result := repo.db.Model(&entity.Transaction{}).Count(&count); result.Error != nil {
-		repo.logger.Errorf("Failed to count transactions: %v", result.Error)
+		repo.logger.Error().Err(result.Error).Msg("failed to count transactions")
 		return 0
 	}
 

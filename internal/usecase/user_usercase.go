@@ -5,31 +5,34 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/password"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-type UserUsecase interface {
+type UserUseCase interface {
 	CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error)
 	AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error)
 	GetUserById(id string) (*entity.UserDto, error)
+	GetUserByEmail(email string) (*entity.UserDto, error)
+	UpdateUserByID(id string, user *entity.UserUpdatePayload) (*entity.UserDto, error)
 }
 
-type userUsecase struct {
+type userUseCase struct {
 	userRepository repository.UserRepository
 }
 
-type UserUsecaseOptions struct {
+type UserUseCaseOptions struct {
 	UserRepository repository.UserRepository
 }
 
-func NewUserUsecase(options *UserUsecaseOptions) UserUsecase {
-	return &userUsecase{
+func NewUserUseCase(options *UserUseCaseOptions) UserUseCase {
+	return &userUseCase{
 		userRepository: options.UserRepository,
 	}
 }
 
-func (uc *userUsecase) CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error) {
+func (uc *userUseCase) CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error) {
 	if user.Password != user.PasswordConfirmation {
 		return nil, fmt.Errorf("password and password confirmation does not match")
 	}
@@ -39,13 +42,21 @@ func (uc *userUsecase) CreateUser(user *entity.UserCreatePayload) (*entity.UserD
 		return nil, err
 	}
 
+	birthDate, err := time.Parse(time.RFC3339, user.BirthDate)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := entity.User{
 		Email:          user.Email,
 		Firstname:      user.Firstname,
 		Lastname:       user.Lastname,
-		PhoneNumber:    user.PhoneNumber,
 		HashedPassword: hashedPassword,
+		BirthDate:      birthDate,
+		Gender:         entity.ParseGender(user.Gender),
 	}
+
+	fmt.Println("payload", payload.Gender)
 
 	newUser, err := uc.userRepository.Create(&payload)
 	if err != nil {
@@ -55,7 +66,7 @@ func (uc *userUsecase) CreateUser(user *entity.UserCreatePayload) (*entity.UserD
 	return newUser.ToUserDto(), nil
 }
 
-func (uc *userUsecase) AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error) {
+func (uc *userUseCase) AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error) {
 	user, err := uc.userRepository.FindByEmail(payload.Email)
 	if err != nil {
 		return nil, err
@@ -68,7 +79,7 @@ func (uc *userUsecase) AuthenticateUser(payload *entity.UserLoginPayload) (*enti
 	return user.ToUserDto(), nil
 }
 
-func (uc *userUsecase) GetUserById(id string) (*entity.UserDto, error) {
+func (uc *userUseCase) GetUserById(id string) (*entity.UserDto, error) {
 	userID := uuid.MustParse(id)
 
 	user, err := uc.userRepository.FindById(userID)
@@ -77,4 +88,32 @@ func (uc *userUsecase) GetUserById(id string) (*entity.UserDto, error) {
 	}
 
 	return user.ToUserDto(), nil
+}
+
+func (uc *userUseCase) GetUserByEmail(email string) (*entity.UserDto, error) {
+	user, err := uc.userRepository.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user.ToUserDto(), nil
+}
+
+func (uc *userUseCase) UpdateUserByID(id string, user *entity.UserUpdatePayload) (*entity.UserDto, error) {
+	userID := uuid.MustParse(id)
+
+	payload := entity.User{
+		Email:           user.Email,
+		Firstname:       user.Firstname,
+		Lastname:        user.Lastname,
+		ProfileImage:    user.ProfileImage,
+		IsEmailVerified: user.IsEmailVerified,
+	}
+
+	updatedUser, err := uc.userRepository.UpdateByID(userID, &payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser.ToUserDto(), nil
 }

@@ -183,16 +183,20 @@ definitions:
     type: object
   User:
     properties:
+      birthdate:
+        type: string
       created_at:
         type: string
       email:
         type: string
       full_name:
         type: string
+      gender:
+        type: string
       id:
         type: string
-      phone_number:
-        type: string
+      is_email_verified:
+        type: boolean
       profile_image:
         type: string
       updated_at:
@@ -200,9 +204,13 @@ definitions:
     type: object
   UserCreatePayload:
     properties:
+      birthdate:
+        type: string
       email:
         type: string
       firstname:
+        type: string
+      gender:
         type: string
       lastname:
         type: string
@@ -210,15 +218,14 @@ definitions:
         type: string
       password_confirmation:
         type: string
-      phone_number:
-        type: string
     required:
+    - birthdate
     - email
     - firstname
+    - gender
     - lastname
     - password
     - password_confirmation
-    - phone_number
     type: object
   UserLoginPayload:
     properties:
@@ -291,12 +298,19 @@ definitions:
       access_token_expired_at:
         type: string
     type: object
+  internal_http_handler.SendVerifyEmailPayload:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
 info:
   contact:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is a sample server server.
+  description: This is a sample server.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -306,6 +320,8 @@ info:
 paths:
   /auth/login:
     post:
+      consumes:
+      - application/json
       description: Authenticate user with email and password
       operationId: Login
       parameters:
@@ -335,6 +351,8 @@ paths:
       - auth
   /auth/register:
     post:
+      consumes:
+      - application/json
       description: Create user with specific user data and role
       operationId: Register
       parameters:
@@ -364,6 +382,8 @@ paths:
       - auth
   /auth/renew-token:
     post:
+      consumes:
+      - application/json
       description: Renew access token with refresh token
       operationId: RenewAccessToken
       parameters:
@@ -389,6 +409,72 @@ paths:
           schema:
             $ref: '#/definitions/ErrorResponse'
       summary: Renew Access Token
+      tags:
+      - auth
+  /auth/send-verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Send verify email to user email
+      operationId: SendVerifyEmail
+      parameters:
+      - description: User email to be verified
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/internal_http_handler.SendVerifyEmailPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Send Verify Email
+      tags:
+      - auth
+  /auth/verify-email:
+    get:
+      consumes:
+      - application/json
+      description: Verify email with email id and secret code
+      operationId: VerifyEmail
+      parameters:
+      - description: Email ID to be verified
+        in: query
+        name: email_id
+        required: true
+        type: string
+      - description: Secret Code to be verified
+        in: query
+        name: secret_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Verify Email
       tags:
       - auth
   /hello:

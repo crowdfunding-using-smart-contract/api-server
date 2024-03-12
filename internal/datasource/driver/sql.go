@@ -7,9 +7,12 @@ import (
 	"fund-o/api-server/internal/datasource/driver/seeds"
 	"fund-o/api-server/internal/entity"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	gormLogger "gorm.io/gorm/logger"
 )
 
 type SqlDBConfig struct {
@@ -27,11 +30,10 @@ type SQLContext interface {
 }
 
 type sqlContext struct {
-	dsn string
-	db  *gorm.DB
+	dsn    string
+	db     *gorm.DB
+	logger zerolog.Logger
 }
-
-var logger *log.Entry
 
 func NewSQLContext(config *SqlDBConfig) SQLContext {
 	dsn := fmt.Sprintf(
@@ -43,22 +45,22 @@ func NewSQLContext(config *SqlDBConfig) SQLContext {
 		config.SQL_PORT,
 	)
 
-	logger = log.WithFields(log.Fields{
-		"dsn": fmt.Sprintf(
+	logger := log.With().
+		Str("context", "sql").
+		Str("dsn", fmt.Sprintf(
 			"postgres://%s:%s@%s:%d/%s",
 			config.SQL_USERNAME,
 			"*****",
 			config.SQL_HOST,
 			config.SQL_PORT,
 			config.SQL_DATABASE,
-		),
-	})
+		)).Logger()
 
-	return &sqlContext{dsn: dsn}
+	return &sqlContext{dsn: dsn, logger: logger}
 }
 
 func (sql *sqlContext) Connect() error {
-	logger.Info("Connecting to SQL database...")
+	sql.logger.Info().Msg("Connecting to SQL database...")
 
 	if sql.dsn == "" {
 		return fmt.Errorf("failed to connect to SQL database: DSN is empty")
@@ -67,12 +69,12 @@ func (sql *sqlContext) Connect() error {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: sql.dsn,
 	}), &gorm.Config{
-		// Logger: gormLogger.Default.LogMode(gormLogger.Silent),
+		Logger: gormLogger.Default.LogMode(gormLogger.Silent),
 	})
 	if err != nil {
 		return err
 	}
-	logger.Info("Connecting to SQL database completed")
+	sql.logger.Info().Msg("Connecting to SQL database completed")
 
 	sql.db = db
 
@@ -84,7 +86,7 @@ func (sql *sqlContext) Connect() error {
 }
 
 func (sql *sqlContext) Disconnect() error {
-	logger.Info("Disconnecting from SQL database...")
+	sql.logger.Info().Msg("Disconnecting from SQL database...")
 
 	if sql.db != nil {
 		db, err := sql.db.DB()
@@ -97,7 +99,7 @@ func (sql *sqlContext) Disconnect() error {
 		}
 	}
 
-	logger.Info("Disconnecting from SQL database completed")
+	sql.logger.Info().Msg("Disconnecting from SQL database completed")
 
 	return nil
 }
@@ -115,6 +117,7 @@ func (sql *sqlContext) autoMigrateUp() error {
 		&entity.Project{},
 		&entity.ProjectCategory{},
 		&entity.ProjectSubCategory{},
+		&entity.VerifyEmail{},
 	); err != nil {
 		return err
 	}

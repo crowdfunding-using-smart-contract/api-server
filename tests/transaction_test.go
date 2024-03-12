@@ -23,7 +23,7 @@ import (
 type TransactionSuite struct {
 	suite.Suite
 	repository *mockRepository.MockTransactionRepository
-	usecase    usecase.TransactionUsecase
+	usecase    usecase.TransactionUseCase
 	handler    *handler.TransactionHandler
 }
 
@@ -32,11 +32,11 @@ func (s *TransactionSuite) SetupTest() {
 	defer ctrl.Finish()
 
 	s.repository = mockRepository.NewMockTransactionRepository(ctrl)
-	s.usecase = usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
+	s.usecase = usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
 		TransactionRepository: s.repository,
 	})
 	s.handler = handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
-		TransactionUsecase: s.usecase,
+		TransactionUseCase: s.usecase,
 	})
 }
 

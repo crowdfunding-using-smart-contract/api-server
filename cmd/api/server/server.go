@@ -2,12 +2,17 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"fund-o/api-server/cmd/worker"
+	"fund-o/api-server/pkg/mail"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/hibiken/asynq"
 
 	"fund-o/api-server/internal/datasource"
 	"fund-o/api-server/internal/datasource/repository"
@@ -17,7 +22,7 @@ import (
 	"fund-o/api-server/pkg/token"
 
 	"github.com/gin-gonic/gin"
-	logger "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 
 	cors "github.com/rs/cors/wrapper/gin"
 
@@ -33,13 +38,13 @@ type ApiServer interface {
 }
 
 type apiServer struct {
-	httpServer  *http.Server
-	config      *ApiServerConfig
-	datasources datasource.Datasource
+	httpServer *http.Server
+	config     *ApiServerConfig
+	datasource datasource.Datasource
 }
 
-func NewApiServer(config *ApiServerConfig, datasources datasource.Datasource) ApiServer {
-	router := inject(config, datasources)
+func NewApiServer(config *ApiServerConfig, datasource datasource.Datasource) ApiServer {
+	router := inject(config, datasource)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", config.APP_HOST, config.APP_PORT),
@@ -47,9 +52,9 @@ func NewApiServer(config *ApiServerConfig, datasources datasource.Datasource) Ap
 	}
 
 	return &apiServer{
-		httpServer:  server,
-		config:      config,
-		datasources: datasources,
+		httpServer: server,
+		config:     config,
+		datasource: datasource,
 	}
 }
 
@@ -58,12 +63,12 @@ func (server *apiServer) HttpServer() *http.Server {
 }
 
 func (server *apiServer) Start() error {
-	logger.Info("Starting listening for HTTP requests...")
+	log.Info().Msg("Starting listening for HTTP requests...")
 	go func() {
-		logger.Infof("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
-		logger.Info("Starting listening for HTTP requests completed")
-		if err := server.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Failed to listen and serve: %+v", err)
+		log.Info().Msgf("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
+		log.Info().Msg("Starting listening for HTTP requests completed")
+		if err := server.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal().Err(err).Msg("Failed to listen and serve")
 		}
 	}()
 
@@ -71,13 +76,13 @@ func (server *apiServer) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	<-quit
-	logger.Info("Shutting down server...")
+	log.Info().Msg("Shutting down server...")
 
-	logger.Info("Unregistering datasources...")
-	if err := server.datasources.Close(); err != nil {
+	log.Info().Msg("Unregistering datasource...")
+	if err := server.datasource.Close(); err != nil {
 		return fmt.Errorf("error when close datasources: %v", err)
 	}
-	logger.Info("Unregistering datasources completed")
+	log.Info().Msg("Unregistering datasource completed")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -87,58 +92,79 @@ func (server *apiServer) Start() error {
 	}
 
 	<-ctx.Done()
-	logger.Info("Timeout of 1 second")
-	logger.Info("Shutting down server completed")
+	log.Info().Msg("Timeout of 1 second")
+	log.Info().Msg("Shutting down server completed")
 	return nil
 }
 
-func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Engine {
+func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engine {
 	// Makers
 	jwtMaker, err := token.NewJWTMaker(config.JWT_SECRET_KEY)
 	if err != nil {
-		logger.Fatalf("Failed to create JWT maker: %v", err)
+		log.Fatal().Err(err).Msg("Failed to create JWT maker")
 	}
 
 	// Repositories
-	transactionRepository := repository.NewTransactionRepository(datasources.GetSqlDB())
-	userRepository := repository.NewUserRepository(datasources.GetSqlDB())
-	sessionRepository := repository.NewSessionRepository(datasources.GetSqlDB())
-	projectRepository := repository.NewProjectRepository(datasources.GetSqlDB())
-	projectCategoryRepository := repository.NewProjectCategoryRepository(datasources.GetSqlDB())
+	transactionRepository := repository.NewTransactionRepository(datasource.GetSqlDB())
+	userRepository := repository.NewUserRepository(datasource.GetSqlDB())
+	sessionRepository := repository.NewSessionRepository(datasource.GetSqlDB())
+	projectRepository := repository.NewProjectRepository(datasource.GetSqlDB())
+	projectCategoryRepository := repository.NewProjectCategoryRepository(datasource.GetSqlDB())
+	verifyEmailRepository := repository.NewVerifyEmailRepository(datasource.GetSqlDB())
 
-	// Usecases
-	transactionUsecase := usecase.NewTransactionUsecase(&usecase.TransactionUsecaseOptions{
+	// UseCases
+	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
 		TransactionRepository: transactionRepository,
 	})
-	userUsecase := usecase.NewUserUsecase(&usecase.UserUsecaseOptions{
+	userUseCase := usecase.NewUserUseCase(&usecase.UserUseCaseOptions{
 		UserRepository: userRepository,
 	})
-	sessionUsecase := usecase.NewSessionUsecase(&usecase.SessionUsecaseOptions{
+	sessionUseCase := usecase.NewSessionUseCase(&usecase.SessionUseCaseOptions{
 		SessionRepository: sessionRepository,
 	})
-	projectUsecase := usecase.NewProjectUsecase(&usecase.ProjectUsecaseOptions{
+	projectUseCase := usecase.NewProjectUseCase(&usecase.ProjectUseCaseOptions{
 		ProjectRepository: projectRepository,
 	})
-	projectCategoryUsecase := usecase.NewProjectCategoryUsecase(&usecase.ProjectCategoryUsecaseOptions{
+	projectCategoryUseCase := usecase.NewProjectCategoryUseCase(&usecase.ProjectCategoryUseCaseOptions{
 		ProjectCategoryRepository: projectCategoryRepository,
+	})
+	verifyEmailUseCase := usecase.NewVerifyEmailUseCase(&usecase.VerifyEmailUseCaseOptions{
+		VerifyEmailRepository: verifyEmailRepository,
+	})
+
+	// Task Processor
+	redisOptions := asynq.RedisClientOpt{
+		Addr: config.REDIS_ADDRESS,
+	}
+	taskDistributor := worker.NewRedisTaskDistributor(redisOptions)
+	gmailOptions := mail.GmailSenderOptions{
+		Name:              config.EMAIL_SENDER_NAME,
+		FromEmailAddress:  config.EMAIL_SENDER_ADDRESS,
+		FromEmailPassword: config.EMAIL_SENDER_PASSWORD,
+	}
+	go runTaskProcessor(redisOptions, gmailOptions, &worker.TaskProcessorUseCaseOptions{
+		UserUseCase:        userUseCase,
+		VerifyEmailUseCase: verifyEmailUseCase,
 	})
 
 	// Handlers
 	transactionHandler := handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
-		TransactionUsecase: transactionUsecase,
+		TransactionUseCase: transactionUseCase,
 	})
 	authHandler := handler.NewAuthHandler(&handler.AuthHandlerOptions{
-		UserUsecase:    userUsecase,
-		SessionUsecase: sessionUsecase,
-		TokenMaker:     jwtMaker,
+		UserUseCase:        userUseCase,
+		SessionUseCase:     sessionUseCase,
+		VerifyEmailUseCase: verifyEmailUseCase,
+		TokenMaker:         jwtMaker,
+		TaskDistributor:    taskDistributor,
 	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerOptions{
-		UserUsecase: userUsecase,
+		UserUseCase: userUseCase,
 	})
 	projectHandler := handler.NewProjectHandler(&handler.ProjectHandlerOptions{
-		ProjectUsecase:         projectUsecase,
-		UserUsecase:            userUsecase,
-		ProjectCategoryUsecase: projectCategoryUsecase,
+		ProjectUseCase:         projectUseCase,
+		UserUseCase:            userUseCase,
+		ProjectCategoryUseCase: projectCategoryUseCase,
 	})
 
 	router := gin.New()
@@ -174,6 +200,8 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 		authRoute.POST("/register", authHandler.Register)
 		authRoute.POST("/login", authHandler.Login)
 		authRoute.POST("/renew-token", authHandler.RenewAccessToken)
+		authRoute.GET("/verify-email", authHandler.VerifyEmail)
+		authRoute.POST("/send-verify-email", authHandler.SendVerifyEmail)
 		// authRoute.POST("/login-with-google", func(c *gin.Context) {
 		// 	c.Redirect(http.StatusTemporaryRedirect, )
 		// })
@@ -196,7 +224,7 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 
 // @title FundO API
 // @version 1.0
-// @description This is a sample server server.
+// @description This is a sample server.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -213,4 +241,22 @@ func inject(config *ApiServerConfig, datasources datasource.Datasource) *gin.Eng
 // @name Authorization
 func initSwaggerDocs(router *gin.RouterGroup) {
 	router.GET("/openapi/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+}
+
+func runTaskProcessor(
+	redisOptions asynq.RedisClientOpt,
+	gmailOptions mail.GmailSenderOptions,
+	useCases *worker.TaskProcessorUseCaseOptions,
+) {
+	mailer := mail.NewGmailSender(&gmailOptions)
+	taskProcessor := worker.NewRedisTaskProcessor(&worker.RedisTaskProcessorOptions{
+		RedisOptions: redisOptions,
+		Mailer:       mailer,
+		UseCases:     useCases,
+	})
+
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
 }

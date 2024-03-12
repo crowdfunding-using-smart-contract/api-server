@@ -2,8 +2,9 @@ package repository
 
 import (
 	"fund-o/api-server/internal/entity"
+	"github.com/rs/zerolog"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -13,20 +14,18 @@ type ProjectCategoryRepository interface {
 
 type projectCategoryRepository struct {
 	db     *gorm.DB
-	logger *log.Entry
+	logger zerolog.Logger
 }
 
 func NewProjectCategoryRepository(db *gorm.DB) ProjectCategoryRepository {
-	logger := log.WithFields(log.Fields{
-		"module": "project_category_repository",
-	})
+	logger := log.With().Str("module", "project_category_repository").Logger()
 	return &projectCategoryRepository{db, logger}
 }
 
 func (repo *projectCategoryRepository) FindAll() ([]entity.ProjectCategory, error) {
 	var categories []entity.ProjectCategory
 	if result := repo.db.Preload("SubCategories").Find(&categories); result.Error != nil {
-		repo.logger.Errorf("Failed to list project categories: %v", result.Error)
+		repo.logger.Error().Err(result.Error).Msg("failed to list project categories")
 		return nil, result.Error
 	}
 
