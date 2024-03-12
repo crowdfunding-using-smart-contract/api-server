@@ -8,6 +8,23 @@ definitions:
       status_code:
         type: integer
     type: object
+  Forum:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      comments:
+        items:
+          $ref: '#/definitions/internal_entity.CommentDto'
+        type: array
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+    type: object
   MessageResponse:
     properties:
       message:
@@ -15,6 +32,25 @@ definitions:
       status:
         type: string
       status_code:
+        type: integer
+    type: object
+  PaginateResult-Forum:
+    properties:
+      current_page:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/Forum'
+        type: array
+      from:
+        type: integer
+      last_page:
+        type: integer
+      per_page:
+        type: integer
+      to:
+        type: integer
+      total:
         type: integer
     type: object
   PaginateResult-Transaction:
@@ -87,6 +123,24 @@ definitions:
       name:
         type: string
     type: object
+  ResultResponse-Forum:
+    properties:
+      result:
+        $ref: '#/definitions/Forum'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-PaginateResult-Forum:
+    properties:
+      result:
+        $ref: '#/definitions/PaginateResult-Forum'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   ResultResponse-PaginateResult-Transaction:
     properties:
       result:
@@ -154,6 +208,15 @@ definitions:
       status_code:
         type: integer
     type: object
+  ResultResponse-fund-o_api-server_internal_entity_CommentDto:
+    properties:
+      result:
+        $ref: '#/definitions/fund-o_api-server_internal_entity.CommentDto'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   ResultResponse-internal_http_handler_RenewAccessTokenResponse:
     properties:
       result:
@@ -205,18 +268,25 @@ definitions:
   UserCreatePayload:
     properties:
       birthdate:
+        example: "2002-04-16T00:00:00Z"
         type: string
       email:
+        example: someemail@gmail.com
         type: string
       firstname:
+        example: John
         type: string
       gender:
+        example: m
         type: string
       lastname:
+        example: Doe
         type: string
       password:
+        example: '@Password123'
         type: string
       password_confirmation:
+        example: '@Password123'
         type: string
     required:
     - birthdate
@@ -230,8 +300,10 @@ definitions:
   UserLoginPayload:
     properties:
       email:
+        example: danzkikii@gmail.com
         type: string
       password:
+        example: '@Password123'
         type: string
     required:
     - email
@@ -251,6 +323,38 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/User'
+    type: object
+  fund-o_api-server_internal_entity.CommentCreatePayload:
+    properties:
+      content:
+        type: string
+    required:
+    - content
+    type: object
+  fund-o_api-server_internal_entity.CommentDto:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      replies:
+        items:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.ReplyDto'
+        type: array
+    type: object
+  fund-o_api-server_internal_entity.ForumCreatePayload:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+    required:
+    - content
+    - title
     type: object
   fund-o_api-server_internal_entity.ProjectCreatePayload:
     properties:
@@ -283,6 +387,43 @@ definitions:
     - sub_title
     - target_amount
     - title
+    type: object
+  fund-o_api-server_internal_entity.ReplyDto:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+    type: object
+  internal_entity.CommentDto:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      replies:
+        items:
+          $ref: '#/definitions/internal_entity.ReplyDto'
+        type: array
+    type: object
+  internal_entity.ReplyDto:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
     type: object
   internal_http_handler.RenewAccessTokenPayload:
     properties:
@@ -477,6 +618,131 @@ paths:
       summary: Verify Email
       tags:
       - auth
+  /forums:
+    get:
+      consumes:
+      - application/json
+      description: List forums
+      operationId: ListForums
+      parameters:
+      - description: number of page
+        in: query
+        name: page
+        type: integer
+      - description: size of data per page
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-PaginateResult-Forum'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Forums
+      tags:
+      - forums
+    post:
+      consumes:
+      - application/json
+      description: Create forum
+      operationId: CreateForum
+      parameters:
+      - description: forum payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.ForumCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResultResponse-Forum'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Forum
+      tags:
+      - forums
+  /forums/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get forum by id
+      operationId: GetForumByID
+      parameters:
+      - description: forum id to get
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Forum'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Forum by ID
+      tags:
+      - forums
+  /forums/{id}/comments:
+    post:
+      consumes:
+      - application/json
+      description: Create comment for forum
+      operationId: CreateComment
+      parameters:
+      - description: forum id to comment
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: comment payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.CommentCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResultResponse-fund-o_api-server_internal_entity_CommentDto'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Comment
+      tags:
+      - forums
   /hello:
     get:
       description: Health checking for the service

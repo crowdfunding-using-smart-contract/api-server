@@ -264,6 +264,198 @@ const docTemplate = `{
                 }
             }
         },
+        "/forums": {
+            "get": {
+                "description": "List forums",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forums"
+                ],
+                "summary": "List Forums",
+                "operationId": "ListForums",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "number of page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of data per page",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-PaginateResult-Forum"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create forum",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forums"
+                ],
+                "summary": "Create Forum",
+                "operationId": "CreateForum",
+                "parameters": [
+                    {
+                        "description": "forum payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.ForumCreatePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Forum"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/forums/{id}": {
+            "get": {
+                "description": "Get forum by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forums"
+                ],
+                "summary": "Get Forum by ID",
+                "operationId": "GetForumByID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "forum id to get",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Forum"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/forums/{id}/comments": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create comment for forum",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forums"
+                ],
+                "summary": "Create Comment",
+                "operationId": "CreateComment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "forum id to comment",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "comment payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.CommentCreatePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-fund-o_api-server_internal_entity_CommentDto"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/hello": {
             "get": {
                 "description": "Health checking for the service",
@@ -580,6 +772,32 @@ const docTemplate = `{
                 }
             }
         },
+        "Forum": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_entity.CommentDto"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "MessageResponse": {
             "type": "object",
             "properties": {
@@ -590,6 +808,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PaginateResult-Forum": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Forum"
+                    }
+                },
+                "from": {
+                    "type": "integer"
+                },
+                "last_page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "to": {
+                    "type": "integer"
+                },
+                "total": {
                     "type": "integer"
                 }
             }
@@ -701,6 +948,34 @@ const docTemplate = `{
                 }
             }
         },
+        "ResultResponse-Forum": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/Forum"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-PaginateResult-Forum": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/PaginateResult-Forum"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
         "ResultResponse-PaginateResult-Transaction": {
             "type": "object",
             "properties": {
@@ -805,6 +1080,20 @@ const docTemplate = `{
                 }
             }
         },
+        "ResultResponse-fund-o_api-server_internal_entity_CommentDto": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/fund-o_api-server_internal_entity.CommentDto"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
         "ResultResponse-internal_http_handler_RenewAccessTokenResponse": {
             "type": "object",
             "properties": {
@@ -892,25 +1181,32 @@ const docTemplate = `{
             ],
             "properties": {
                 "birthdate": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2002-04-16T00:00:00Z"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "someemail@gmail.com"
                 },
                 "firstname": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "John"
                 },
                 "gender": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "m"
                 },
                 "lastname": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Doe"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "@Password123"
                 },
                 "password_confirmation": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "@Password123"
                 }
             }
         },
@@ -922,10 +1218,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "danzkikii@gmail.com"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "@Password123"
                 }
             }
         },
@@ -949,6 +1247,55 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.CommentCreatePayload": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.CommentDto": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/fund-o_api-server_internal_entity.ReplyDto"
+                    }
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.ForumCreatePayload": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -994,6 +1341,63 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.ReplyDto": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_entity.CommentDto": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_entity.ReplyDto"
+                    }
+                }
+            }
+        },
+        "internal_entity.ReplyDto": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 }
             }
