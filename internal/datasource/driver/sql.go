@@ -116,7 +116,7 @@ func (sql *sqlContext) autoMigrateUp() error {
 		&entity.ProjectCategory{},
 		&entity.ProjectSubCategory{},
 		&entity.VerifyEmail{},
-		&entity.Forum{},
+		&entity.Post{},
 		&entity.Comment{},
 		&entity.Reply{},
 	); err != nil {

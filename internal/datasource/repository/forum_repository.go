@@ -15,11 +15,13 @@ type forumRepository struct {
 }
 
 type ForumRepository interface {
-	List(findOptions pagination.PaginateFindOptions) []entity.Forum
-	Count() int64
-	Create(forum *entity.Forum) (*entity.Forum, error)
-	FindByID(id uuid.UUID) (*entity.Forum, error)
-	FindAllByAuthorID(authorID uuid.UUID) ([]entity.Forum, error)
+	ListPosts(findOptions pagination.PaginateFindOptions) []entity.Post
+	CountPost() int64
+	CreatePost(forum *entity.Post) (*entity.Post, error)
+	FindPostByID(id uuid.UUID) (*entity.Post, error)
+	FindAllPostsByAuthorID(authorID uuid.UUID) ([]entity.Post, error)
+	CreateComment(comment *entity.Comment) (*entity.Comment, error)
+	CreateReply(reply *entity.Reply) (*entity.Reply, error)
 }
 
 func NewForumRepository(db *gorm.DB) ForumRepository {
@@ -27,63 +29,89 @@ func NewForumRepository(db *gorm.DB) ForumRepository {
 	return &forumRepository{db, logger}
 }
 
-func (repo *forumRepository) List(findOptions pagination.PaginateFindOptions) (forums []entity.Forum) {
+func (repo *forumRepository) ListPosts(findOptions pagination.PaginateFindOptions) (forums []entity.Post) {
 	if result := repo.db.Limit(findOptions.Limit).Offset(findOptions.Skip).Find(&forums); result.Error != nil {
-		repo.logger.Error().Err(result.Error).Msg("failed to list forums")
+		repo.logger.Error().Err(result.Error).Msg("failed to list posts")
 		return
 	}
 
 	return forums
 }
 
-func (repo *forumRepository) Count() int64 {
+func (repo *forumRepository) CountPost() int64 {
 	var count int64
-	if result := repo.db.Model(&entity.Forum{}).Count(&count); result.Error != nil {
-		repo.logger.Error().Err(result.Error).Msg("failed to count forums")
+	if result := repo.db.Model(&entity.Post{}).Count(&count); result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to count posts")
 		return 0
 	}
 
 	return count
 }
 
-func (repo *forumRepository) Create(forum *entity.Forum) (*entity.Forum, error) {
+func (repo *forumRepository) CreatePost(forum *entity.Post) (*entity.Post, error) {
 	result := repo.db.
 		Preload("Author").
 		Create(&forum).
 		First(&forum)
 	if result.Error != nil {
-		repo.logger.Error().Err(result.Error).Msg("failed to create forum")
+		repo.logger.Error().Err(result.Error).Msg("failed to create post")
 		return nil, result.Error
 	}
 
 	return forum, nil
 }
 
-func (repo *forumRepository) FindByID(id uuid.UUID) (*entity.Forum, error) {
-	var forum entity.Forum
+func (repo *forumRepository) FindPostByID(id uuid.UUID) (*entity.Post, error) {
+	var forum entity.Post
 	result := repo.db.
 		Preload("Author").
 		Preload("Comments").
+		Preload("Comments.Author").
 		Where("id = ?", id).
 		First(&forum)
 	if result.Error != nil {
-		repo.logger.Error().Err(result.Error).Msg("failed to find forum")
+		repo.logger.Error().Err(result.Error).Msg("failed to find post by id: " + id.String())
 		return nil, result.Error
 	}
 
 	return &forum, nil
 }
 
-func (repo *forumRepository) FindAllByAuthorID(authorID uuid.UUID) ([]entity.Forum, error) {
-	var forums []entity.Forum
+func (repo *forumRepository) FindAllPostsByAuthorID(authorID uuid.UUID) ([]entity.Post, error) {
+	var forums []entity.Post
 	result := repo.db.
 		Preload("Author").
 		Where("author_id = ?", authorID).
 		Find(&forums)
 	if result.Error != nil {
-		repo.logger.Error().Err(result.Error).Msg("failed to list forums")
+		repo.logger.Error().Err(result.Error).Msg("failed to list posts by author id: " + authorID.String())
 		return nil, result.Error
 	}
 
 	return forums, nil
+}
+
+func (repo *forumRepository) CreateComment(comment *entity.Comment) (*entity.Comment, error) {
+	result := repo.db.
+		Preload("Author").
+		Create(&comment).
+		First(&comment)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to create comment")
+		return nil, result.Error
+	}
+
+	return comment, nil
+}
+
+func (repo *forumRepository) CreateReply(reply *entity.Reply) (*entity.Reply, error) {
+	result := repo.db.
+		Create(&reply).
+		First(&reply)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to create reply")
+		return nil, result.Error
+	}
+
+	return reply, nil
 }

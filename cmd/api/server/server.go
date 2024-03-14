@@ -111,6 +111,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	projectRepository := repository.NewProjectRepository(datasource.GetSqlDB())
 	projectCategoryRepository := repository.NewProjectCategoryRepository(datasource.GetSqlDB())
 	verifyEmailRepository := repository.NewVerifyEmailRepository(datasource.GetSqlDB())
+	forumRepository := repository.NewForumRepository(datasource.GetSqlDB())
 
 	// UseCases
 	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
@@ -130,6 +131,9 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	})
 	verifyEmailUseCase := usecase.NewVerifyEmailUseCase(&usecase.VerifyEmailUseCaseOptions{
 		VerifyEmailRepository: verifyEmailRepository,
+	})
+	forumUseCase := usecase.NewForumUseCase(&usecase.ForumUseCaseOptions{
+		ForumRepository: forumRepository,
 	})
 
 	// Task Processor
@@ -166,6 +170,9 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		UserUseCase:            userUseCase,
 		ProjectCategoryUseCase: projectCategoryUseCase,
 	})
+	forumHandler := handler.NewForumHandler(&handler.ForumHandlerOptions{
+		ForumUseCase: forumUseCase,
+	})
 
 	router := gin.New()
 
@@ -194,7 +201,6 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		transactionRoute.GET("/:id", transactionHandler.GetTransaction)
 		transactionRoute.POST("", transactionHandler.CreateTransaction)
 	}
-
 	authRoute := routeV1.Group("/auth")
 	{
 		authRoute.POST("/register", authHandler.Register)
@@ -206,17 +212,22 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		// 	c.Redirect(http.StatusTemporaryRedirect, )
 		// })
 	}
-
 	userRoute := routeV1.Group("/users")
 	{
 		userRoute.GET("/me", authMiddleware, userHandler.GetMe)
 	}
-
 	projectRoute := routeV1.Group("/projects")
 	{
 		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
 		projectRoute.GET("/own", authMiddleware, projectHandler.GetOwnProjects)
 		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
+	}
+	postRoute := routeV1.Group("/posts")
+	{
+		postRoute.GET("", forumHandler.ListPosts)
+		postRoute.POST("", authMiddleware, forumHandler.CreatePost)
+		postRoute.GET("/:id", forumHandler.GetPostByID)
+		postRoute.POST("/:id/comments", authMiddleware, forumHandler.CreateComment)
 	}
 
 	return router

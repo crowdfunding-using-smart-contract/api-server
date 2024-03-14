@@ -1,4 +1,19 @@
 definitions:
+  Comment:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      replies:
+        items:
+          $ref: '#/definitions/Reply'
+        type: array
+    type: object
   ErrorResponse:
     properties:
       error:
@@ -7,23 +22,6 @@ definitions:
         type: string
       status_code:
         type: integer
-    type: object
-  Forum:
-    properties:
-      author:
-        $ref: '#/definitions/User'
-      comments:
-        items:
-          $ref: '#/definitions/internal_entity.CommentDto'
-        type: array
-      content:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-      title:
-        type: string
     type: object
   MessageResponse:
     properties:
@@ -34,13 +32,13 @@ definitions:
       status_code:
         type: integer
     type: object
-  PaginateResult-Forum:
+  PaginateResult-Post:
     properties:
       current_page:
         type: integer
       data:
         items:
-          $ref: '#/definitions/Forum'
+          $ref: '#/definitions/Post'
         type: array
       from:
         type: integer
@@ -71,6 +69,23 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  Post:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      comments:
+        items:
+          $ref: '#/definitions/Comment'
+        type: array
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
     type: object
   Project:
     properties:
@@ -123,19 +138,30 @@ definitions:
       name:
         type: string
     type: object
-  ResultResponse-Forum:
+  Reply:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+    type: object
+  ResultResponse-Comment:
     properties:
       result:
-        $ref: '#/definitions/Forum'
+        $ref: '#/definitions/Comment'
       status:
         type: string
       status_code:
         type: integer
     type: object
-  ResultResponse-PaginateResult-Forum:
+  ResultResponse-PaginateResult-Post:
     properties:
       result:
-        $ref: '#/definitions/PaginateResult-Forum'
+        $ref: '#/definitions/PaginateResult-Post'
       status:
         type: string
       status_code:
@@ -145,6 +171,15 @@ definitions:
     properties:
       result:
         $ref: '#/definitions/PaginateResult-Transaction'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-Post:
+    properties:
+      result:
+        $ref: '#/definitions/Post'
       status:
         type: string
       status_code:
@@ -203,15 +238,6 @@ definitions:
         items:
           $ref: '#/definitions/ProjectCategory'
         type: array
-      status:
-        type: string
-      status_code:
-        type: integer
-    type: object
-  ResultResponse-fund-o_api-server_internal_entity_CommentDto:
-    properties:
-      result:
-        $ref: '#/definitions/fund-o_api-server_internal_entity.CommentDto'
       status:
         type: string
       status_code:
@@ -331,22 +357,7 @@ definitions:
     required:
     - content
     type: object
-  fund-o_api-server_internal_entity.CommentDto:
-    properties:
-      author:
-        $ref: '#/definitions/User'
-      content:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-      replies:
-        items:
-          $ref: '#/definitions/fund-o_api-server_internal_entity.ReplyDto'
-        type: array
-    type: object
-  fund-o_api-server_internal_entity.ForumCreatePayload:
+  fund-o_api-server_internal_entity.PostCreatePayload:
     properties:
       content:
         type: string
@@ -387,43 +398,6 @@ definitions:
     - sub_title
     - target_amount
     - title
-    type: object
-  fund-o_api-server_internal_entity.ReplyDto:
-    properties:
-      author:
-        $ref: '#/definitions/User'
-      content:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-    type: object
-  internal_entity.CommentDto:
-    properties:
-      author:
-        $ref: '#/definitions/User'
-      content:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
-      replies:
-        items:
-          $ref: '#/definitions/internal_entity.ReplyDto'
-        type: array
-    type: object
-  internal_entity.ReplyDto:
-    properties:
-      author:
-        $ref: '#/definitions/User'
-      content:
-        type: string
-      created_at:
-        type: string
-      id:
-        type: string
     type: object
   internal_http_handler.RenewAccessTokenPayload:
     properties:
@@ -618,12 +592,31 @@ paths:
       summary: Verify Email
       tags:
       - auth
-  /forums:
+  /hello:
+    get:
+      description: Health checking for the service
+      operationId: GetHelloMessageHandler
+      parameters:
+      - description: name of the active user
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MessageResponse'
+      summary: Health Check
+      tags:
+      - healthcheck
+  /posts:
     get:
       consumes:
       - application/json
-      description: List forums
-      operationId: ListForums
+      description: List posts
+      operationId: ListPosts
       parameters:
       - description: number of page
         in: query
@@ -639,33 +632,33 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ResultResponse-PaginateResult-Forum'
+            $ref: '#/definitions/ResultResponse-PaginateResult-Post'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ErrorResponse'
-      summary: List Forums
+      summary: List Posts
       tags:
       - forums
     post:
       consumes:
       - application/json
-      description: Create forum
-      operationId: CreateForum
+      description: Create post
+      operationId: CreatePost
       parameters:
-      - description: forum payload
+      - description: post payload
         in: body
         name: payload
         required: true
         schema:
-          $ref: '#/definitions/fund-o_api-server_internal_entity.ForumCreatePayload'
+          $ref: '#/definitions/fund-o_api-server_internal_entity.PostCreatePayload'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/ResultResponse-Forum'
+            $ref: '#/definitions/ResultResponse-Post'
         "400":
           description: Bad Request
           schema:
@@ -676,17 +669,17 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       security:
       - ApiKeyAuth: []
-      summary: Create Forum
+      summary: Create Post
       tags:
       - forums
-  /forums/{id}:
+  /posts/{id}:
     get:
       consumes:
       - application/json
-      description: Get forum by id
-      operationId: GetForumByID
+      description: Get post by id
+      operationId: GetPostByID
       parameters:
-      - description: forum id to get
+      - description: post id to get
         in: path
         name: id
         required: true
@@ -697,15 +690,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ResultResponse-Forum'
+            $ref: '#/definitions/ResultResponse-Post'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/ErrorResponse'
-      summary: Get Forum by ID
+      summary: Get Post by ID
       tags:
       - forums
-  /forums/{id}/comments:
+  /posts/{id}/comments:
     post:
       consumes:
       - application/json
@@ -729,7 +722,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/ResultResponse-fund-o_api-server_internal_entity_CommentDto'
+            $ref: '#/definitions/ResultResponse-Comment'
         "400":
           description: Bad Request
           schema:
@@ -743,25 +736,6 @@ paths:
       summary: Create Comment
       tags:
       - forums
-  /hello:
-    get:
-      description: Health checking for the service
-      operationId: GetHelloMessageHandler
-      parameters:
-      - description: name of the active user
-        in: query
-        name: name
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/MessageResponse'
-      summary: Health Check
-      tags:
-      - healthcheck
   /projects:
     post:
       description: Create project with required data

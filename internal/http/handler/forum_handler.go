@@ -25,19 +25,19 @@ func NewForumHandler(options *ForumHandlerOptions) *ForumHandler {
 	}
 }
 
-// ListForums godoc
-// @summary List Forums
-// @description List forums
+// ListPosts godoc
+// @summary List Posts
+// @description List posts
 // @tags forums
-// @id ListForums
+// @id ListPosts
 // @accept json
 // @produce json
 // @param page query int false "number of page"
 // @param size query int false "size of data per page"
-// @success 200 {object} handler.ResultResponse[pagination.PaginateResult[entity.ForumDto]] "OK"
+// @success 200 {object} handler.ResultResponse[pagination.PaginateResult[entity.PostDto]] "OK"
 // @failure 500 {object} handler.ErrorResponse "Internal Server Error"
-// @router /forums [get]
-func (h *ForumHandler) ListForums(c *gin.Context) {
+// @router /posts [get]
+func (h *ForumHandler) ListPosts(c *gin.Context) {
 	var paginateOptions pagination.PaginateOptions
 	if err := c.ShouldBindQuery(&paginateOptions); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error list forums: %v", err.Error())))
@@ -47,29 +47,29 @@ func (h *ForumHandler) ListForums(c *gin.Context) {
 	c.JSON(makeHttpResponse(http.StatusOK, forums))
 }
 
-// CreateForum godoc
-// @summary Create Forum
-// @description Create forum
+// CreatePost godoc
+// @summary Create Post
+// @description Create post
 // @tags forums
-// @id CreateForum
+// @id CreatePost
 // @accept json
 // @produce json
 // @security ApiKeyAuth
-// @param payload body entity.ForumCreatePayload true "forum payload"
-// @success 201 {object} handler.ResultResponse[entity.ForumDto]
+// @param payload body entity.PostCreatePayload true "post payload"
+// @success 201 {object} handler.ResultResponse[entity.PostDto]
 // @failure 400 {object} handler.ErrorResponse
 // @failure 500 {object} handler.ErrorResponse
-// @router /forums [post]
-func (h *ForumHandler) CreateForum(c *gin.Context) {
+// @router /posts [post]
+func (h *ForumHandler) CreatePost(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
-	var req entity.ForumCreatePayload
+	var req entity.PostCreatePayload
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create forum: %v", err.Error())))
 	}
 
 	req.AuthorID = userID
 
-	forumDto, err := h.forumUseCase.CreateForum(&req)
+	forumDto, err := h.forumUseCase.CreatePost(&req)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create forum: %v", err.Error())))
 	}
@@ -77,20 +77,20 @@ func (h *ForumHandler) CreateForum(c *gin.Context) {
 	c.JSON(makeHttpResponse(http.StatusCreated, forumDto))
 }
 
-// GetForumByID godoc
-// @summary Get Forum by ID
-// @description Get forum by id
+// GetPostByID godoc
+// @summary Get Post by ID
+// @description Get post by id
 // @tags forums
-// @id GetForumByID
+// @id GetPostByID
 // @accept json
 // @produce json
-// @param id path string true "forum id to get"
-// @success 200 {object} handler.ResultResponse[entity.ForumDto]
+// @param id path string true "post id to get"
+// @success 200 {object} handler.ResultResponse[entity.PostDto]
 // @failure 500 {object} handler.ErrorResponse
-// @router /forums/{id} [get]
-func (h *ForumHandler) GetForumByID(c *gin.Context) {
+// @router /posts/{id} [get]
+func (h *ForumHandler) GetPostByID(c *gin.Context) {
 	id := c.Param("id")
-	forumDto, err := h.forumUseCase.GetForumByID(id)
+	forumDto, err := h.forumUseCase.GetPostByID(id)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get forum by id: %v", err.Error())))
 		return
@@ -112,7 +112,7 @@ func (h *ForumHandler) GetForumByID(c *gin.Context) {
 // @success 201 {object} handler.ResultResponse[entity.CommentDto]
 // @failure 400 {object} handler.ErrorResponse
 // @failure 500 {object} handler.ErrorResponse
-// @router /forums/{id}/comments [post]
+// @router /posts/{id}/comments [post]
 func (h *ForumHandler) CreateComment(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
 	forumID := c.Param("id")

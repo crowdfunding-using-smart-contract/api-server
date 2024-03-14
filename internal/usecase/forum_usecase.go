@@ -8,41 +8,38 @@ import (
 )
 
 type ForumUseCase interface {
-	ListForums(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ForumDto]
-	CreateForum(payload *entity.ForumCreatePayload) (*entity.ForumDto, error)
-	GetForumByID(id string) (*entity.ForumDto, error)
+	ListForums(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.PostDto]
+	CreatePost(payload *entity.PostCreatePayload) (*entity.PostDto, error)
+	GetPostByID(id string) (*entity.PostDto, error)
 	CreateCommentByForumID(forumID string, comment *entity.CommentCreatePayload) (*entity.CommentDto, error)
 }
 
 type forumUseCase struct {
-	forumRepository   repository.ForumRepository
-	commentRepository repository.CommentRepository
+	forumRepository repository.ForumRepository
 }
 
 type ForumUseCaseOptions struct {
 	repository.ForumRepository
-	repository.CommentRepository
 }
 
 func NewForumUseCase(options *ForumUseCaseOptions) ForumUseCase {
 	return &forumUseCase{
-		forumRepository:   options.ForumRepository,
-		commentRepository: options.CommentRepository,
+		forumRepository: options.ForumRepository,
 	}
 }
 
-func (uc *forumUseCase) ListForums(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ForumDto] {
-	result := pagination.MakePaginateResult(pagination.MakePaginateContextParameters[entity.ForumDto]{
+func (uc *forumUseCase) ListForums(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.PostDto] {
+	result := pagination.MakePaginateResult(pagination.MakePaginateContextParameters[entity.PostDto]{
 		PaginateOptions: paginateOptions,
 		CountDocuments: func() int64 {
-			return uc.forumRepository.Count()
+			return uc.forumRepository.CountPost()
 		},
-		FindDocuments: func(findOptions pagination.PaginateFindOptions) []entity.ForumDto {
-			documents := uc.forumRepository.List(findOptions)
+		FindDocuments: func(findOptions pagination.PaginateFindOptions) []entity.PostDto {
+			documents := uc.forumRepository.ListPosts(findOptions)
 
-			forumDtos := make([]entity.ForumDto, 0, len(documents))
+			forumDtos := make([]entity.PostDto, 0, len(documents))
 			for _, document := range documents {
-				forumDtos = append(forumDtos, *document.ToForumDto())
+				forumDtos = append(forumDtos, *document.ToPostDto())
 			}
 
 			return forumDtos
@@ -52,8 +49,8 @@ func (uc *forumUseCase) ListForums(paginateOptions pagination.PaginateOptions) p
 	return result
 }
 
-func (uc *forumUseCase) CreateForum(payload *entity.ForumCreatePayload) (*entity.ForumDto, error) {
-	forum, err := uc.forumRepository.Create(&entity.Forum{
+func (uc *forumUseCase) CreatePost(payload *entity.PostCreatePayload) (*entity.PostDto, error) {
+	forum, err := uc.forumRepository.CreatePost(&entity.Post{
 		Title:    payload.Title,
 		Content:  payload.Content,
 		AuthorID: uuid.MustParse(payload.AuthorID),
@@ -62,20 +59,20 @@ func (uc *forumUseCase) CreateForum(payload *entity.ForumCreatePayload) (*entity
 		return nil, err
 	}
 
-	return forum.ToForumDto(), nil
+	return forum.ToPostDto(), nil
 }
 
-func (uc *forumUseCase) GetForumByID(id string) (*entity.ForumDto, error) {
-	forum, err := uc.forumRepository.FindByID(uuid.MustParse(id))
+func (uc *forumUseCase) GetPostByID(id string) (*entity.PostDto, error) {
+	forum, err := uc.forumRepository.FindPostByID(uuid.MustParse(id))
 	if err != nil {
 		return nil, err
 	}
 
-	return forum.ToForumDto(), nil
+	return forum.ToPostDto(), nil
 }
 
 func (uc *forumUseCase) CreateCommentByForumID(forumID string, payload *entity.CommentCreatePayload) (*entity.CommentDto, error) {
-	comment, err := uc.commentRepository.Create(&entity.Comment{
+	comment, err := uc.forumRepository.CreateComment(&entity.Comment{
 		Content:  payload.Content,
 		AuthorID: uuid.MustParse(payload.AuthorID),
 		ForumID:  uuid.MustParse(forumID),

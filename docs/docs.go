@@ -264,9 +264,38 @@ const docTemplate = `{
                 }
             }
         },
-        "/forums": {
+        "/hello": {
             "get": {
-                "description": "List forums",
+                "description": "Health checking for the service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "healthcheck"
+                ],
+                "summary": "Health Check",
+                "operationId": "GetHelloMessageHandler",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name of the active user",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/posts": {
+            "get": {
+                "description": "List posts",
                 "consumes": [
                     "application/json"
                 ],
@@ -276,8 +305,8 @@ const docTemplate = `{
                 "tags": [
                     "forums"
                 ],
-                "summary": "List Forums",
-                "operationId": "ListForums",
+                "summary": "List Posts",
+                "operationId": "ListPosts",
                 "parameters": [
                     {
                         "type": "integer",
@@ -296,7 +325,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-PaginateResult-Forum"
+                            "$ref": "#/definitions/ResultResponse-PaginateResult-Post"
                         }
                     },
                     "500": {
@@ -313,7 +342,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Create forum",
+                "description": "Create post",
                 "consumes": [
                     "application/json"
                 ],
@@ -323,16 +352,16 @@ const docTemplate = `{
                 "tags": [
                     "forums"
                 ],
-                "summary": "Create Forum",
-                "operationId": "CreateForum",
+                "summary": "Create Post",
+                "operationId": "CreatePost",
                 "parameters": [
                     {
-                        "description": "forum payload",
+                        "description": "post payload",
                         "name": "payload",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fund-o_api-server_internal_entity.ForumCreatePayload"
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.PostCreatePayload"
                         }
                     }
                 ],
@@ -340,7 +369,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-Forum"
+                            "$ref": "#/definitions/ResultResponse-Post"
                         }
                     },
                     "400": {
@@ -358,9 +387,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/forums/{id}": {
+        "/posts/{id}": {
             "get": {
-                "description": "Get forum by id",
+                "description": "Get post by id",
                 "consumes": [
                     "application/json"
                 ],
@@ -370,12 +399,12 @@ const docTemplate = `{
                 "tags": [
                     "forums"
                 ],
-                "summary": "Get Forum by ID",
-                "operationId": "GetForumByID",
+                "summary": "Get Post by ID",
+                "operationId": "GetPostByID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "forum id to get",
+                        "description": "post id to get",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -385,7 +414,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-Forum"
+                            "$ref": "#/definitions/ResultResponse-Post"
                         }
                     },
                     "500": {
@@ -397,7 +426,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/forums/{id}/comments": {
+        "/posts/{id}/comments": {
             "post": {
                 "security": [
                     {
@@ -438,7 +467,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-fund-o_api-server_internal_entity_CommentDto"
+                            "$ref": "#/definitions/ResultResponse-Comment"
                         }
                     },
                     "400": {
@@ -451,35 +480,6 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/hello": {
-            "get": {
-                "description": "Health checking for the service",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "healthcheck"
-                ],
-                "summary": "Health Check",
-                "operationId": "GetHelloMessageHandler",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "name of the active user",
-                        "name": "name",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/MessageResponse"
                         }
                     }
                 }
@@ -758,6 +758,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "Comment": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Reply"
+                    }
+                }
+            }
+        },
         "ErrorResponse": {
             "type": "object",
             "properties": {
@@ -769,32 +792,6 @@ const docTemplate = `{
                 },
                 "status_code": {
                     "type": "integer"
-                }
-            }
-        },
-        "Forum": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "$ref": "#/definitions/User"
-                },
-                "comments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_entity.CommentDto"
-                    }
-                },
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
                 }
             }
         },
@@ -812,7 +809,7 @@ const docTemplate = `{
                 }
             }
         },
-        "PaginateResult-Forum": {
+        "PaginateResult-Post": {
             "type": "object",
             "properties": {
                 "current_page": {
@@ -821,7 +818,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/Forum"
+                        "$ref": "#/definitions/Post"
                     }
                 },
                 "from": {
@@ -867,6 +864,32 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "Post": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -948,11 +971,28 @@ const docTemplate = `{
                 }
             }
         },
-        "ResultResponse-Forum": {
+        "Reply": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/User"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "ResultResponse-Comment": {
             "type": "object",
             "properties": {
                 "result": {
-                    "$ref": "#/definitions/Forum"
+                    "$ref": "#/definitions/Comment"
                 },
                 "status": {
                     "type": "string"
@@ -962,11 +1002,11 @@ const docTemplate = `{
                 }
             }
         },
-        "ResultResponse-PaginateResult-Forum": {
+        "ResultResponse-PaginateResult-Post": {
             "type": "object",
             "properties": {
                 "result": {
-                    "$ref": "#/definitions/PaginateResult-Forum"
+                    "$ref": "#/definitions/PaginateResult-Post"
                 },
                 "status": {
                     "type": "string"
@@ -981,6 +1021,20 @@ const docTemplate = `{
             "properties": {
                 "result": {
                     "$ref": "#/definitions/PaginateResult-Transaction"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-Post": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/Post"
                 },
                 "status": {
                     "type": "string"
@@ -1071,20 +1125,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/ProjectCategory"
                     }
-                },
-                "status": {
-                    "type": "string"
-                },
-                "status_code": {
-                    "type": "integer"
-                }
-            }
-        },
-        "ResultResponse-fund-o_api-server_internal_entity_CommentDto": {
-            "type": "object",
-            "properties": {
-                "result": {
-                    "$ref": "#/definitions/fund-o_api-server_internal_entity.CommentDto"
                 },
                 "status": {
                     "type": "string"
@@ -1261,30 +1301,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fund-o_api-server_internal_entity.CommentDto": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "$ref": "#/definitions/User"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "replies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/fund-o_api-server_internal_entity.ReplyDto"
-                    }
-                }
-            }
-        },
-        "fund-o_api-server_internal_entity.ForumCreatePayload": {
+        "fund-o_api-server_internal_entity.PostCreatePayload": {
             "type": "object",
             "required": [
                 "content",
@@ -1341,63 +1358,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "fund-o_api-server_internal_entity.ReplyDto": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "$ref": "#/definitions/User"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_entity.CommentDto": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "$ref": "#/definitions/User"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "replies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_entity.ReplyDto"
-                    }
-                }
-            }
-        },
-        "internal_entity.ReplyDto": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "$ref": "#/definitions/User"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 }
             }
