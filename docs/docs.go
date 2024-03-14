@@ -264,6 +264,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/comments/{id}/replies": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create reply for comment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forums"
+                ],
+                "summary": "Create Reply",
+                "operationId": "CreateReply",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "comment id to reply",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "reply payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.ReplyCreatePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Reply"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/hello": {
             "get": {
                 "description": "Health checking for the service",
@@ -888,6 +947,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "project": {
+                    "$ref": "#/definitions/Project"
+                },
                 "title": {
                     "type": "string"
                 }
@@ -1049,6 +1111,20 @@ const docTemplate = `{
             "properties": {
                 "result": {
                     "$ref": "#/definitions/Project"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-Reply": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/Reply"
                 },
                 "status": {
                     "type": "string"
@@ -1259,7 +1335,7 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
-                    "example": "danzkikii@gmail.com"
+                    "example": "someemail@gmail.com"
                 },
                 "password": {
                     "type": "string",
@@ -1304,11 +1380,18 @@ const docTemplate = `{
         "fund-o_api-server_internal_entity.PostCreatePayload": {
             "type": "object",
             "required": [
-                "content",
+                "description",
+                "project_id",
                 "title"
             ],
             "properties": {
                 "content": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "title": {
@@ -1358,6 +1441,21 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.ReplyCreatePayload": {
+            "type": "object",
+            "required": [
+                "comment_id",
+                "content"
+            ],
+            "properties": {
+                "comment_id": {
+                    "type": "string"
+                },
+                "content": {
                     "type": "string"
                 }
             }

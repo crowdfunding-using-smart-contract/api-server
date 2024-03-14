@@ -66,7 +66,7 @@ type UserUpdatePayload struct {
 } // @name UserUpdatePayload
 
 type UserLoginPayload struct {
-	Email    string `json:"email" binding:"required" example:"danzkikii@gmail.com"`
+	Email    string `json:"email" binding:"required" example:"someemail@gmail.com"`
 	Password string `json:"password" binding:"required" example:"@Password123"`
 } // @name UserLoginPayload
 
