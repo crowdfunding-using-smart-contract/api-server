@@ -12,6 +12,7 @@ type ForumUseCase interface {
 	CreatePost(payload *entity.PostCreatePayload) (*entity.PostDto, error)
 	GetPostByID(id string) (*entity.PostDto, error)
 	CreateCommentByForumID(forumID string, comment *entity.CommentCreatePayload) (*entity.CommentDto, error)
+	CreateReplyByCommentID(commentID string, payload *entity.ReplyCreatePayload) (*entity.ReplyDto, error)
 }
 
 type forumUseCase struct {
@@ -82,4 +83,17 @@ func (uc *forumUseCase) CreateCommentByForumID(forumID string, payload *entity.C
 	}
 
 	return comment.ToCommentDto(), nil
+}
+
+func (uc *forumUseCase) CreateReplyByCommentID(commentID string, payload *entity.ReplyCreatePayload) (*entity.ReplyDto, error) {
+	reply, err := uc.forumRepository.CreateReply(&entity.Reply{
+		Content:   payload.Content,
+		AuthorID:  uuid.MustParse(payload.AuthorID),
+		CommentID: uuid.MustParse(commentID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return reply.ToReplyDto(), nil
 }

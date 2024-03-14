@@ -229,6 +229,10 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		postRoute.GET("/:id", forumHandler.GetPostByID)
 		postRoute.POST("/:id/comments", authMiddleware, forumHandler.CreateComment)
 	}
+	commentRoute := routeV1.Group("/comments")
+	{
+		commentRoute.POST("/:id/replies", authMiddleware, forumHandler.CreateReply)
+	}
 
 	return router
 }

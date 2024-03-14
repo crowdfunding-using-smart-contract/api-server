@@ -131,3 +131,36 @@ func (h *ForumHandler) CreateComment(c *gin.Context) {
 
 	c.JSON(makeHttpResponse(http.StatusCreated, commentDto))
 }
+
+// CreateReply godoc
+// @summary Create Reply
+// @description Create reply for comment
+// @tags forums
+// @id CreateReply
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "comment id to reply"
+// @param payload body entity.ReplyCreatePayload true "reply payload"
+// @success 201 {object} handler.ResultResponse[entity.ReplyDto]
+// @failure 400 {object} handler.ErrorResponse
+// @failure 500 {object} handler.ErrorResponse
+// @router /comments/{id}/replies [post]
+func (h *ForumHandler) CreateReply(c *gin.Context) {
+	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+	commentID := c.Param("id")
+	var req entity.ReplyCreatePayload
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create reply: %v", err.Error())))
+	}
+
+	req.AuthorID = userID
+
+	replyDto, err := h.forumUseCase.CreateReplyByCommentID(commentID, &req)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create reply: %v", err.Error())))
+		return
+	}
+
+	c.JSON(makeHttpResponse(http.StatusCreated, replyDto))
+}

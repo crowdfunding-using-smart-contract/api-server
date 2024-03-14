@@ -7,11 +7,14 @@ import (
 
 type Post struct {
 	Base
-	Title    string    `gorm:"size:255;not null"`
-	Content  string    `gorm:"not null"`
-	AuthorID uuid.UUID `gorm:"not null"`
-	Author   User      `gorm:"foreignKey:AuthorID"`
-	Comments []Comment `gorm:"foreignKey:ForumID"`
+	Title       string    `gorm:"type:varchar(255);not null"`
+	Description string    `gorm:"type:varchar(255);not null"`
+	Content     string    `gorm:"not null"`
+	AuthorID    uuid.UUID `gorm:"not null"`
+	Author      User      `gorm:"foreignKey:AuthorID"`
+	ProjectID   uuid.UUID `gorm:"not null"`
+	Project     Project   `gorm:"foreignKey:ProjectID"`
+	Comments    []Comment `gorm:"foreignKey:ForumID"`
 }
 
 type PostDto struct {
@@ -19,8 +22,9 @@ type PostDto struct {
 	Title     string       `json:"title"`
 	Content   string       `json:"content"`
 	Author    *UserDto     `json:"author"`
-	CreatedAt string       `json:"created_at"`
+	Project   *ProjectDto  `json:"project"`
 	Comments  []CommentDto `json:"comments"`
+	CreatedAt string       `json:"created_at"`
 } // @name Post
 
 type Comment struct {
@@ -58,14 +62,22 @@ type ReplyDto struct {
 // Secondary types
 
 type PostCreatePayload struct {
-	Title    string `json:"title" binding:"required"`
-	Content  string `json:"content" binding:"required"`
-	AuthorID string `swaggerignore:"true"`
+	Title       string `json:"title" binding:"required"`
+	Description string `json:"description" binding:"required"`
+	Content     string `json:"content"`
+	ProjectID   string `json:"project_id" binding:"required"`
+	AuthorID    string `swaggerignore:"true"`
 }
 
 type CommentCreatePayload struct {
 	Content  string `json:"content" binding:"required"`
 	AuthorID string `swaggerignore:"true"`
+}
+
+type ReplyCreatePayload struct {
+	Content   string `json:"content" binding:"required"`
+	CommentID string `json:"comment_id" binding:"required"`
+	AuthorID  string `swaggerignore:"true"`
 }
 
 // Parse functions
@@ -81,6 +93,7 @@ func (f *Post) ToPostDto() *PostDto {
 		Title:     f.Title,
 		Content:   f.Content,
 		Author:    f.Author.ToUserDto(),
+		Project:   f.Project.ToProjectDto(),
 		Comments:  comments,
 		CreatedAt: f.CreatedAt.Format(time.RFC3339),
 	}

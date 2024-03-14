@@ -106,6 +106,7 @@ func (repo *forumRepository) CreateComment(comment *entity.Comment) (*entity.Com
 
 func (repo *forumRepository) CreateReply(reply *entity.Reply) (*entity.Reply, error) {
 	result := repo.db.
+		Preload("Author").
 		Create(&reply).
 		First(&reply)
 	if result.Error != nil {
