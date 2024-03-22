@@ -1,9 +1,12 @@
 package usecase
 
 import (
+	"errors"
 	"fmt"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/pkg/apperrors"
+	"gorm.io/gorm"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +16,8 @@ import (
 type ProjectUseCase interface {
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
+	CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error
+	IsRatedProject(userID string, projectID string) (bool, error)
 }
 
 type projectUseCase struct {
@@ -37,7 +42,7 @@ func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*
 		return nil, err
 	}
 
-	var launchDate time.Time = time.Now()
+	var launchDate = endDate
 	if project.LaunchDate != "" {
 		if launchDate, err = time.Parse(time.RFC3339, project.LaunchDate); err != nil {
 			fmt.Println("Error while parsing launch date: ", err)
@@ -82,4 +87,45 @@ func (uc *projectUseCase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.
 	}
 
 	return projectDtos, nil
+}
+func (uc *projectUseCase) CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error {
+	projectID, err := uuid.Parse(rating.ProjectID)
+	if err != nil {
+		return apperrors.ErrInvalidProjectID
+	}
+
+	userID, err := uuid.Parse(rating.UserID)
+	if err != nil {
+		return apperrors.ErrInvalidUserID
+	}
+
+	pr, prErr := uc.projectRepository.FindProjectRating(userID, projectID)
+	if prErr != nil && !errors.Is(prErr, gorm.ErrRecordNotFound) {
+		return prErr
+	}
+
+	if pr.ID != uuid.Nil {
+		return apperrors.ErrAlreadyRatedProject
+	}
+
+	_, err = uc.projectRepository.CreateProjectRating(&entity.ProjectRating{
+		Rating:    rating.Rating,
+		ProjectID: projectID,
+		UserID:    userID,
+	})
+	return err
+}
+func (uc *projectUseCase) IsRatedProject(userID string, projectID string) (bool, error) {
+	userIDParsed := uuid.MustParse(userID)
+	projectIDParsed := uuid.MustParse(projectID)
+	pr, err := uc.projectRepository.FindProjectRating(userIDParsed, projectIDParsed)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, err
+	}
+
+	if pr.ID != uuid.Nil {
+		return true, nil
+	}
+
+	return false, nil
 }
