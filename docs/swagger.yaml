@@ -58,6 +58,8 @@ definitions:
         type: string
       owner:
         $ref: '#/definitions/User'
+      rating:
+        type: number
       start_date:
         type: string
       sub_category:
@@ -149,6 +151,15 @@ definitions:
         items:
           $ref: '#/definitions/ProjectCategory'
         type: array
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-bool:
+    properties:
+      result:
+        type: boolean
       status:
         type: string
       status_code:
@@ -266,8 +277,6 @@ definitions:
         type: string
       monetary_unit:
         type: string
-      ownerID:
-        type: string
       sub_category_id:
         type: string
       sub_title:
@@ -283,6 +292,15 @@ definitions:
     - sub_title
     - target_amount
     - title
+    type: object
+  fund-o_api-server_internal_entity.ProjectRatingCreatePayload:
+    properties:
+      rating:
+        maximum: 5
+        minimum: 0
+        type: number
+    required:
+    - rating
     type: object
   internal_http_handler.RenewAccessTokenPayload:
     properties:
@@ -525,6 +543,72 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create Project
+      tags:
+      - projects
+  /projects/{id}/ratings:
+    post:
+      consumes:
+      - application/json
+      description: Create project rating with required data
+      operationId: CreateProjectRating
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Project rating data to be created
+        in: body
+        name: ProjectRating
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.ProjectRatingCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResultResponse-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Project Rating
+      tags:
+      - projects
+  /projects/{id}/ratings/verify:
+    get:
+      consumes:
+      - application/json
+      description: Verify project rating by user
+      operationId: VerifyProjectRating
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-bool'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Verify Project Rating
       tags:
       - projects
   /projects/categories:

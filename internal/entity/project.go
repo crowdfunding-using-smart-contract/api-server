@@ -15,6 +15,7 @@ type Project struct {
 	Category       ProjectCategory `gorm:"foreignKey:CategoryID"`
 	SubCategoryID  uuid.UUID
 	SubCategory    ProjectSubCategory `gorm:"foreignKey:SubCategoryID"`
+	Ratings        []ProjectRating
 	Image          string
 	Description    string
 	TargetFunding  decimal.Decimal `gorm:"type:decimal(32,16)"`
@@ -22,9 +23,9 @@ type Project struct {
 	MonetaryUnit   string          `gorm:"default:'THB'"`
 	StartDate      time.Time       `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	EndDate        time.Time       `gorm:"not null"`
-	LaunchDate     time.Time
-	OwnerID        uuid.UUID `gorm:"not null"`
-	Owner          User      `gorm:"foreignKey:OwnerID"`
+	LaunchDate     time.Time       `gorm:"default:null"`
+	OwnerID        uuid.UUID       `gorm:"not null"`
+	Owner          User            `gorm:"foreignKey:OwnerID"`
 }
 
 type ProjectDto struct {
@@ -33,6 +34,7 @@ type ProjectDto struct {
 	SubTitle       string                 `json:"sub_title"`
 	Category       *ProjectCategoryDto    `json:"category"`
 	SubCategory    *ProjectSubCategoryDto `json:"sub_category"`
+	Rating         float32                `json:"rating"`
 	Image          string                 `json:"image"`
 	Description    string                 `json:"description"`
 	TargetFunding  decimal.Decimal        `json:"target_amount"`
@@ -44,6 +46,13 @@ type ProjectDto struct {
 	Owner          *UserDto               `json:"owner"`
 	CreatedAt      string                 `json:"created_at"`
 } // @name Project
+
+type ProjectRating struct {
+	Base
+	Rating    float32 `gorm:"not null"`
+	ProjectID uuid.UUID
+	UserID    uuid.UUID
+} // @name ProjectRating
 
 // Secondary types
 
@@ -58,18 +67,35 @@ type ProjectCreatePayload struct {
 	MonetaryUnit  string          `json:"monetary_unit"`
 	EndDate       string          `json:"end_date" binding:"required"`
 	LaunchDate    string          `json:"launch_date"`
-	OwnerID       string
+	OwnerID       string          `swaggerignore:"true"`
+}
+
+type ProjectRatingCreatePayload struct {
+	Rating    float32 `json:"rating" binding:"required,gte=0,lte=5"`
+	ProjectID string  `json:"project_id" binding:"required" swaggerignore:"true"`
+	UserID    string  `swaggerignore:"true"`
 }
 
 // Parse functions
 
 func (p *Project) ToProjectDto() *ProjectDto {
+	rating := float32(0)
+
+	if len(p.Ratings) > 0 {
+		totalRating := float32(0)
+		for _, r := range p.Ratings {
+			totalRating += r.Rating
+		}
+		rating = totalRating / float32(len(p.Ratings))
+	}
+
 	return &ProjectDto{
 		ID:             p.ID.String(),
 		Title:          p.Title,
 		SubTitle:       p.SubTitle,
 		Category:       p.Category.ToProjectCategoryDto(),
 		SubCategory:    p.SubCategory.ToProjectSubCategoryDto(),
+		Rating:         rating,
 		Image:          p.Image,
 		Description:    p.Description,
 		TargetFunding:  p.TargetFunding,

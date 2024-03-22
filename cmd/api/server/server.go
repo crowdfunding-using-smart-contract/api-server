@@ -217,6 +217,8 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
 		projectRoute.GET("/own", authMiddleware, projectHandler.GetOwnProjects)
 		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
+		projectRoute.POST("/:id/ratings", authMiddleware, projectHandler.CreateProjectRating)
+		projectRoute.GET("/:id/ratings/verify", authMiddleware, projectHandler.VerifyProjectRating)
 	}
 
 	return router

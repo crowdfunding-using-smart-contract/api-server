@@ -407,6 +407,109 @@ const docTemplate = `{
                 }
             }
         },
+        "/projects/{id}/ratings": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Create project rating with required data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Create Project Rating",
+                "operationId": "CreateProjectRating",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Project rating data to be created",
+                        "name": "ProjectRating",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fund-o_api-server_internal_entity.ProjectRatingCreatePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{id}/ratings/verify": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Verify project rating by user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Verify Project Rating",
+                "operationId": "VerifyProjectRating",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-bool"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/transactions": {
             "get": {
                 "description": "Get list of transactions",
@@ -656,6 +759,9 @@ const docTemplate = `{
                 "owner": {
                     "$ref": "#/definitions/User"
                 },
+                "rating": {
+                    "type": "number"
+                },
                 "start_date": {
                     "type": "string"
                 },
@@ -796,6 +902,20 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/ProjectCategory"
                     }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-bool": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "boolean"
                 },
                 "status": {
                     "type": "string"
@@ -981,9 +1101,6 @@ const docTemplate = `{
                 "monetary_unit": {
                     "type": "string"
                 },
-                "ownerID": {
-                    "type": "string"
-                },
                 "sub_category_id": {
                     "type": "string"
                 },
@@ -995,6 +1112,19 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "fund-o_api-server_internal_entity.ProjectRatingCreatePayload": {
+            "type": "object",
+            "required": [
+                "rating"
+            ],
+            "properties": {
+                "rating": {
+                    "type": "number",
+                    "maximum": 5,
+                    "minimum": 0
                 }
             }
         },
