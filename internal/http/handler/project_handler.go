@@ -36,7 +36,7 @@ func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 // @description Create project with required data
 // @tags projects
 // @id CreateProject
-// @accpet json
+// @accept mpfd
 // @produce json
 // @security ApiKeyAuth
 // @param Project body entity.ProjectCreatePayload true "Project data to be created"
@@ -48,7 +48,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
 
 	var req entity.ProjectCreatePayload
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project: %v", err.Error())))
 		return
 	}

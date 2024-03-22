@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"mime/multipart"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,15 +10,16 @@ import (
 
 type Project struct {
 	Base
-	Title          string          `gorm:"type:varchar(255);not null"`
-	SubTitle       string          `gorm:"not null"`
+	Title          string `gorm:"type:varchar(255);not null"`
+	SubTitle       string `gorm:"not null"`
+	Description    string
 	CategoryID     uuid.UUID       `gorm:"not null"`
 	Category       ProjectCategory `gorm:"foreignKey:CategoryID"`
 	SubCategoryID  uuid.UUID
 	SubCategory    ProjectSubCategory `gorm:"foreignKey:SubCategoryID"`
-	Ratings        []ProjectRating
+	Location       string             `gorm:"not null"`
 	Image          string
-	Description    string
+	Ratings        []ProjectRating
 	TargetFunding  decimal.Decimal `gorm:"type:decimal(32,16)"`
 	CurrentFunding decimal.Decimal `gorm:"type:decimal(32,16)"`
 	MonetaryUnit   string          `gorm:"default:'THB'"`
@@ -32,11 +34,12 @@ type ProjectDto struct {
 	ID             string                 `json:"id"`
 	Title          string                 `json:"title"`
 	SubTitle       string                 `json:"sub_title"`
+	Description    string                 `json:"description"`
 	Category       *ProjectCategoryDto    `json:"category"`
 	SubCategory    *ProjectSubCategoryDto `json:"sub_category"`
-	Rating         float32                `json:"rating"`
+	Location       string                 `json:"location"`
 	Image          string                 `json:"image"`
-	Description    string                 `json:"description"`
+	Rating         float32                `json:"rating"`
 	TargetFunding  decimal.Decimal        `json:"target_amount"`
 	CurrentFunding decimal.Decimal        `json:"current_amount"`
 	MonetaryUnit   string                 `json:"monetary_unit"`
@@ -57,17 +60,18 @@ type ProjectRating struct {
 // Secondary types
 
 type ProjectCreatePayload struct {
-	Title         string          `json:"title" binding:"required"`
-	SubTitle      string          `json:"sub_title" binding:"required"`
-	CategoryID    string          `json:"category_id" binding:"required"`
-	SubCategoryID string          `json:"sub_category_id" binding:"required"`
-	Image         string          `json:"image"`
-	Description   string          `json:"description"`
-	TargetFunding decimal.Decimal `json:"target_amount" binding:"required"`
-	MonetaryUnit  string          `json:"monetary_unit"`
-	EndDate       string          `json:"end_date" binding:"required"`
-	LaunchDate    string          `json:"launch_date"`
-	OwnerID       string          `swaggerignore:"true"`
+	Title         string                `form:"title" binding:"required"`
+	SubTitle      string                `form:"sub_title" binding:"required"`
+	Description   string                `form:"description"`
+	CategoryID    string                `form:"category_id" binding:"required"`
+	SubCategoryID string                `form:"sub_category_id" binding:"required"`
+	Location      string                `form:"location" binding:"required"`
+	Image         *multipart.FileHeader `form:"image" binding:"required"`
+	TargetFunding string                `form:"target_funding" binding:"required"`
+	MonetaryUnit  string                `form:"monetary_unit"`
+	EndDate       string                `form:"end_date" binding:"required"`
+	LaunchDate    string                `form:"launch_date"`
+	OwnerID       string                `swaggerignore:"true"`
 }
 
 type ProjectRatingCreatePayload struct {
@@ -95,6 +99,7 @@ func (p *Project) ToProjectDto() *ProjectDto {
 		SubTitle:       p.SubTitle,
 		Category:       p.Category.ToProjectCategoryDto(),
 		SubCategory:    p.SubCategory.ToProjectSubCategoryDto(),
+		Location:       p.Location,
 		Rating:         rating,
 		Image:          p.Image,
 		Description:    p.Description,
