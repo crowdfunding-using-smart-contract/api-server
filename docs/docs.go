@@ -301,6 +301,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Create project with required data",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -753,6 +756,9 @@ const docTemplate = `{
                 "launch_date": {
                     "type": "string"
                 },
+                "location": {
+                    "type": "string"
+                },
                 "monetary_unit": {
                     "type": "string"
                 },
@@ -1073,47 +1079,7 @@ const docTemplate = `{
             }
         },
         "fund-o_api-server_internal_entity.ProjectCreatePayload": {
-            "type": "object",
-            "required": [
-                "category_id",
-                "end_date",
-                "sub_category_id",
-                "sub_title",
-                "target_amount",
-                "title"
-            ],
-            "properties": {
-                "category_id": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "end_date": {
-                    "type": "string"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "launch_date": {
-                    "type": "string"
-                },
-                "monetary_unit": {
-                    "type": "string"
-                },
-                "sub_category_id": {
-                    "type": "string"
-                },
-                "sub_title": {
-                    "type": "string"
-                },
-                "target_amount": {
-                    "type": "number"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "fund-o_api-server_internal_entity.ProjectRatingCreatePayload": {
             "type": "object",
