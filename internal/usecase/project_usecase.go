@@ -50,14 +50,20 @@ func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*
 		}
 	}
 
+	targetFunding, err := decimal.NewFromString(project.TargetFunding)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := &entity.Project{
-		Title:          project.Title,
-		SubTitle:       project.SubTitle,
-		CategoryID:     uuid.MustParse(project.CategoryID),
-		SubCategoryID:  uuid.MustParse(project.SubCategoryID),
-		Image:          project.Image,
+		Title:         project.Title,
+		SubTitle:      project.SubTitle,
+		CategoryID:    uuid.MustParse(project.CategoryID),
+		SubCategoryID: uuid.MustParse(project.SubCategoryID),
+		Location:      project.Location,
+		//Image:          project.Image,
 		Description:    project.Description,
-		TargetFunding:  project.TargetFunding,
+		TargetFunding:  targetFunding,
 		MonetaryUnit:   project.MonetaryUnit,
 		StartDate:      time.Now(),
 		EndDate:        endDate,
