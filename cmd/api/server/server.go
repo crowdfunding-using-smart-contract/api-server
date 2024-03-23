@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"fund-o/api-server/cmd/worker"
 	"fund-o/api-server/pkg/mail"
+	"fund-o/api-server/pkg/uploader"
 	"net/http"
 	"os"
 	"os/signal"
@@ -104,6 +105,16 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		log.Fatal().Err(err).Msg("Failed to create JWT maker")
 	}
 
+	imageUploader, err := uploader.NewS3Store(&uploader.S3StoreConfig{
+		Region:             config.AwsRegion,
+		Bucket:             config.AwsBucketName,
+		AwsAccessKeyID:     config.AwsAccessKeyID,
+		AwsSecretAccessKey: config.AwsSecretAccessKey,
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create image uploader")
+	}
+
 	// Repositories
 	transactionRepository := repository.NewTransactionRepository(datasource.GetSqlDB())
 	userRepository := repository.NewUserRepository(datasource.GetSqlDB())
@@ -124,6 +135,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	})
 	projectUseCase := usecase.NewProjectUseCase(&usecase.ProjectUseCaseOptions{
 		ProjectRepository: projectRepository,
+		ImageUploader:     imageUploader,
 	})
 	projectCategoryUseCase := usecase.NewProjectCategoryUseCase(&usecase.ProjectCategoryUseCaseOptions{
 		ProjectCategoryRepository: projectCategoryRepository,

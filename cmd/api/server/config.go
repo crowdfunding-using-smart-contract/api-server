@@ -19,4 +19,8 @@ type ApiServerConfig struct {
 	EMAIL_SENDER_NAME            string `mapstructure:"EMAIL_SENDER_NAME"`
 	EMAIL_SENDER_ADDRESS         string `mapstructure:"EMAIL_SENDER_ADDRESS"`
 	EMAIL_SENDER_PASSWORD        string `mapstructure:"EMAIL_SENDER_PASSWORD"`
+	AwsRegion                    string `mapstructure:"AWS_REGION"`
+	AwsBucketName                string `mapstructure:"AWS_BUCKET_NAME"`
+	AwsAccessKeyID               string `mapstructure:"AWS_ACCESS_KEY_ID"`
+	AwsSecretAccessKey           string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
 }
