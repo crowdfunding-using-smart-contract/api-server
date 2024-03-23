@@ -6,6 +6,7 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/apperrors"
+	"fund-o/api-server/pkg/uploader"
 	"gorm.io/gorm"
 	"time"
 
@@ -22,15 +23,18 @@ type ProjectUseCase interface {
 
 type projectUseCase struct {
 	projectRepository repository.ProjectRepository
+	imageUploader     uploader.ImageUploader
 }
 
 type ProjectUseCaseOptions struct {
 	repository.ProjectRepository
+	uploader.ImageUploader
 }
 
 func NewProjectUseCase(options *ProjectUseCaseOptions) ProjectUseCase {
 	return &projectUseCase{
 		projectRepository: options.ProjectRepository,
+		imageUploader:     options.ImageUploader,
 	}
 }
 
@@ -55,13 +59,18 @@ func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*
 		return nil, err
 	}
 
+	image, err := uc.imageUploader.Upload(uploader.ProjectImageFolder, project.Image)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := &entity.Project{
-		Title:         project.Title,
-		SubTitle:      project.SubTitle,
-		CategoryID:    uuid.MustParse(project.CategoryID),
-		SubCategoryID: uuid.MustParse(project.SubCategoryID),
-		Location:      project.Location,
-		//Image:          project.Image,
+		Title:          project.Title,
+		SubTitle:       project.SubTitle,
+		CategoryID:     uuid.MustParse(project.CategoryID),
+		SubCategoryID:  uuid.MustParse(project.SubCategoryID),
+		Location:       project.Location,
+		Image:          image,
 		Description:    project.Description,
 		TargetFunding:  targetFunding,
 		MonetaryUnit:   project.MonetaryUnit,
