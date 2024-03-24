@@ -909,7 +909,7 @@ paths:
       summary: List Project Categories
       tags:
       - projects
-  /projects/own:
+  /projects/me:
     get:
       description: Get own projects with authenticate creator
       operationId: GetOwnProjects

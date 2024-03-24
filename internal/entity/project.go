@@ -40,8 +40,8 @@ type ProjectDto struct {
 	Location       string                 `json:"location"`
 	Image          string                 `json:"image"`
 	Rating         float32                `json:"rating"`
-	TargetFunding  decimal.Decimal        `json:"target_amount"`
-	CurrentFunding decimal.Decimal        `json:"current_amount"`
+	TargetFunding  decimal.Decimal        `json:"target_funding"`
+	CurrentFunding decimal.Decimal        `json:"current_funding"`
 	MonetaryUnit   string                 `json:"monetary_unit"`
 	StartDate      string                 `json:"start_date"`
 	EndDate        string                 `json:"end_date"`

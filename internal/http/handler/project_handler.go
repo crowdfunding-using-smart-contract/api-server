@@ -83,7 +83,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 // @response 200 {object} handler.ResultResponse[[]entity.ProjectDto] "OK"
 // @response 400 {object} handler.ErrorResponse "Bad Request"
 // @response 500 {object} handler.ErrorResponse "Internal Server Error"
-// @router /projects/own [get]
+// @router /projects/me [get]
 func (h *ProjectHandler) GetOwnProjects(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
 

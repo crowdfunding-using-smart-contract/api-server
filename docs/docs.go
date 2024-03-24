@@ -623,7 +623,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/own": {
+        "/projects/me": {
             "get": {
                 "security": [
                     {

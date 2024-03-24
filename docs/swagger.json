@@ -619,7 +619,7 @@
                 }
             }
         },
-        "/projects/own": {
+        "/projects/me": {
             "get": {
                 "security": [
                     {
