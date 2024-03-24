@@ -36,7 +36,7 @@ func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 // @description Create project with required data
 // @tags projects
 // @id CreateProject
-// @accpet json
+// @accept mpfd
 // @produce json
 // @security ApiKeyAuth
 // @param Project body entity.ProjectCreatePayload true "Project data to be created"
@@ -48,7 +48,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
 
 	var req entity.ProjectCreatePayload
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project: %v", err.Error())))
 		return
 	}
@@ -113,4 +113,70 @@ func (h *ProjectHandler) ListProjectCategories(c *gin.Context) {
 	}
 
 	c.JSON(makeHttpResponse(http.StatusOK, categories))
+}
+
+// CreateProjectRating godoc
+// @summary Create Project Rating
+// @description Create project rating with required data
+// @tags projects
+// @id CreateProjectRating
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "Project ID"
+// @param ProjectRating body entity.ProjectRatingCreatePayload true "Project rating data to be created"
+// @response 201 {object} handler.ResultResponse[entity.ProjectDto] "Created"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/{id}/ratings [post]
+func (h *ProjectHandler) CreateProjectRating(c *gin.Context) {
+	projectID := c.Param("id")
+	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+	var req entity.ProjectRatingCreatePayload
+	req.ProjectID = projectID
+	req.UserID = userID
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project rating: %v", err.Error())))
+		return
+	}
+
+	err := h.projectUseCase.CreateProjectRating(&req)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project rating: %v", err.Error())))
+		return
+	}
+
+	c.JSON(makeHttpMessageResponse(http.StatusCreated, "user rated project successfully"))
+}
+
+// VerifyProjectRating godoc
+// @summary Verify Project Rating
+// @description Verify project rating by user
+// @tags projects
+// @id VerifyProjectRating
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "Project ID"
+// @response 200 {object} handler.ResultResponse[bool] "OK"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/{id}/ratings/verify [get]
+func (h *ProjectHandler) VerifyProjectRating(c *gin.Context) {
+	projectID := c.Param("id")
+	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+	rated, err := h.projectUseCase.IsRatedProject(userID, projectID)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error verify project rating: %v", err.Error())))
+		return
+	}
+
+	if rated {
+		c.JSON(makeHttpMessageResponse(http.StatusConflict, "user already rated this project"))
+		return
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, rated))
 }
