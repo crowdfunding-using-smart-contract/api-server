@@ -52,9 +52,11 @@ func (uc *forumUseCase) ListForums(paginateOptions pagination.PaginateOptions) p
 
 func (uc *forumUseCase) CreatePost(payload *entity.PostCreatePayload) (*entity.PostDto, error) {
 	forum, err := uc.forumRepository.CreatePost(&entity.Post{
-		Title:    payload.Title,
-		Content:  payload.Content,
-		AuthorID: uuid.MustParse(payload.AuthorID),
+		Title:       payload.Title,
+		Description: payload.Description,
+		Content:     payload.Content,
+		AuthorID:    uuid.MustParse(payload.AuthorID),
+		ProjectID:   uuid.MustParse(payload.ProjectID),
 	})
 	if err != nil {
 		return nil, err

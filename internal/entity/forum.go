@@ -18,13 +18,14 @@ type Post struct {
 }
 
 type PostDto struct {
-	ID        string       `json:"id"`
-	Title     string       `json:"title"`
-	Content   string       `json:"content"`
-	Author    *UserDto     `json:"author"`
-	Project   *ProjectDto  `json:"project"`
-	Comments  []CommentDto `json:"comments"`
-	CreatedAt string       `json:"created_at"`
+	ID          string       `json:"id"`
+	Title       string       `json:"title"`
+	Description string       `json:"description"`
+	Content     string       `json:"content"`
+	Author      *UserDto     `json:"author"`
+	Project     *ProjectDto  `json:"project"`
+	Comments    []CommentDto `json:"comments"`
+	CreatedAt   string       `json:"created_at"`
 } // @name Post
 
 type Comment struct {
@@ -89,13 +90,14 @@ func (f *Post) ToPostDto() *PostDto {
 	}
 
 	return &PostDto{
-		ID:        f.ID.String(),
-		Title:     f.Title,
-		Content:   f.Content,
-		Author:    f.Author.ToUserDto(),
-		Project:   f.Project.ToProjectDto(),
-		Comments:  comments,
-		CreatedAt: f.CreatedAt.Format(time.RFC3339),
+		ID:          f.ID.String(),
+		Title:       f.Title,
+		Description: f.Description,
+		Content:     f.Content,
+		Author:      f.Author.ToUserDto(),
+		Project:     f.Project.ToProjectDto(),
+		Comments:    comments,
+		CreatedAt:   f.CreatedAt.Format(time.RFC3339),
 	}
 }
 

@@ -41,6 +41,7 @@ func (h *ForumHandler) ListPosts(c *gin.Context) {
 	var paginateOptions pagination.PaginateOptions
 	if err := c.ShouldBindQuery(&paginateOptions); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error list forums: %v", err.Error())))
+		return
 	}
 
 	forums := h.forumUseCase.ListForums(paginateOptions)
@@ -65,6 +66,7 @@ func (h *ForumHandler) CreatePost(c *gin.Context) {
 	var req entity.PostCreatePayload
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create forum: %v", err.Error())))
+		return
 	}
 
 	req.AuthorID = userID
@@ -72,6 +74,7 @@ func (h *ForumHandler) CreatePost(c *gin.Context) {
 	forumDto, err := h.forumUseCase.CreatePost(&req)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create forum: %v", err.Error())))
+		return
 	}
 
 	c.JSON(makeHttpResponse(http.StatusCreated, forumDto))
@@ -119,6 +122,7 @@ func (h *ForumHandler) CreateComment(c *gin.Context) {
 	var req entity.CommentCreatePayload
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create comment: %v", err.Error())))
+		return
 	}
 
 	req.AuthorID = userID
@@ -152,6 +156,7 @@ func (h *ForumHandler) CreateReply(c *gin.Context) {
 	var req entity.ReplyCreatePayload
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create reply: %v", err.Error())))
+		return
 	}
 
 	req.AuthorID = userID
