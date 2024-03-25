@@ -130,6 +130,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	})
 	userUseCase := usecase.NewUserUseCase(&usecase.UserUseCaseOptions{
 		UserRepository: userRepository,
+		ImageUploader:  imageUploader,
 	})
 	sessionUseCase := usecase.NewSessionUseCase(&usecase.SessionUseCaseOptions{
 		SessionRepository: sessionRepository,
@@ -227,6 +228,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	userRoute := routeV1.Group("/users")
 	{
 		userRoute.GET("/me", authMiddleware, userHandler.GetMe)
+		userRoute.PATCH("/:id", authMiddleware, userHandler.UpdateUser)
 	}
 	projectRoute := routeV1.Group("/projects")
 	{

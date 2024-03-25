@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"mime/multipart"
 	"time"
 
 	"fund-o/api-server/pkg/helper"
@@ -58,11 +59,9 @@ type UserCreatePayload struct {
 } // @name UserCreatePayload
 
 type UserUpdatePayload struct {
-	Email           string `json:"email"`
-	Firstname       string `json:"firstname"`
-	Lastname        string `json:"lastname"`
-	ProfileImage    string `json:"profile_image"`
-	IsEmailVerified bool   `json:"is_email_verified"`
+	Email           string                `form:"email"`
+	ProfileImage    *multipart.FileHeader `form:"profile_image"`
+	IsEmailVerified bool                  `form:"is_email_verified"`
 } // @name UserUpdatePayload
 
 type UserLoginPayload struct {
