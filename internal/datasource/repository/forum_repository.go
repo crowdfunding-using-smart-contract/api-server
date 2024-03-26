@@ -30,7 +30,17 @@ func NewForumRepository(db *gorm.DB) ForumRepository {
 }
 
 func (repo *forumRepository) ListPosts(findOptions pagination.PaginateFindOptions) (forums []entity.Post) {
-	if result := repo.db.Limit(findOptions.Limit).Offset(findOptions.Skip).Find(&forums); result.Error != nil {
+	result := repo.db.
+		Limit(findOptions.Limit).
+		Offset(findOptions.Skip).
+		Preload("Author").
+		Preload("Project").
+		Preload("Project.Owner").
+		Preload("Project.Category").
+		Preload("Project.SubCategory").
+		Preload("Comments").
+		Find(&forums)
+	if result.Error != nil {
 		repo.logger.Error().Err(result.Error).Msg("failed to list posts")
 		return
 	}
