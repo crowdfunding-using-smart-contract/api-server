@@ -46,6 +46,7 @@ func (repo *projectRepository) Create(project *entity.Project) (*entity.Project,
 func (repo *projectRepository) FindByID(projectID uuid.UUID) (*entity.Project, error) {
 	var project entity.Project
 	result := repo.db.
+		Preload("Owner").
 		Preload("Category").
 		Preload("SubCategory").
 		Preload("Ratings").

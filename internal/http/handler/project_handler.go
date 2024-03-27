@@ -72,6 +72,30 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	c.JSON(makeHttpResponse(http.StatusCreated, projectDto))
 }
 
+// GetProjectByID godoc
+// @summary Get Project by ID
+// @description Get project by ID
+// @tags projects
+// @id GetProjectByID
+// @accept json
+// @produce json
+// @param id path string true "Project ID"
+// @response 200 {object} handler.ResultResponse[entity.ProjectDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/{id} [get]
+func (h *ProjectHandler) GetProjectByID(c *gin.Context) {
+	projectID := c.Param("id")
+
+	projectDto, err := h.projectUseCase.GetProjectByID(projectID)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(err.Status(), err.Error()))
+		return
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, projectDto))
+}
+
 // GetOwnProjects godoc
 // @summary Get own Projects
 // @description Get own projects with authenticate creator

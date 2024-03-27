@@ -8,6 +8,7 @@ import (
 	"fund-o/api-server/pkg/apperrors"
 	"fund-o/api-server/pkg/uploader"
 	"gorm.io/gorm"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,6 +17,7 @@ import (
 
 type ProjectUseCase interface {
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
+	GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
 	CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error
 	IsRatedProject(userID string, projectID string) (bool, error)
@@ -86,6 +88,24 @@ func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*
 	}
 
 	return newProject.ToProjectDto(), nil
+}
+
+func (uc *projectUseCase) GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error) {
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
+		return nil, apperrors.New(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	project, err := uc.projectRepository.FindByID(projectUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.New(http.StatusNotFound, "Project not found")
+		}
+
+		return nil, apperrors.New(http.StatusInternalServerError, "Failed to get project")
+	}
+
+	return project.ToProjectDto(), nil
 }
 
 func (uc *projectUseCase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error) {

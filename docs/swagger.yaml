@@ -827,6 +827,36 @@ paths:
       summary: Create Project
       tags:
       - projects
+  /projects/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get project by ID
+      operationId: GetProjectByID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Project by ID
+      tags:
+      - projects
   /projects/{id}/ratings:
     post:
       consumes:
