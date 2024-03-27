@@ -14,7 +14,7 @@ type Post struct {
 	Author      User      `gorm:"foreignKey:AuthorID"`
 	ProjectID   uuid.UUID `gorm:"not null"`
 	Project     Project   `gorm:"foreignKey:ProjectID"`
-	Comments    []Comment `gorm:"foreignKey:ForumID"`
+	Comments    []Comment
 }
 
 type PostDto struct {
@@ -33,8 +33,8 @@ type Comment struct {
 	Content  string `gorm:"type:varchar(255);not null"`
 	AuthorID uuid.UUID
 	Author   User `gorm:"foreignKey:AuthorID"`
-	ForumID  uuid.UUID
-	Reply    []Reply `gorm:"foreignKey:CommentID"`
+	PostID   uuid.UUID
+	Replies  []Reply
 }
 
 type CommentDto struct {
@@ -76,9 +76,8 @@ type CommentCreatePayload struct {
 }
 
 type ReplyCreatePayload struct {
-	Content   string `json:"content" binding:"required"`
-	CommentID string `json:"comment_id" binding:"required"`
-	AuthorID  string `swaggerignore:"true"`
+	Content  string `json:"content" binding:"required"`
+	AuthorID string `swaggerignore:"true"`
 }
 
 // Parse functions
@@ -102,8 +101,8 @@ func (f *Post) ToPostDto() *PostDto {
 }
 
 func (c *Comment) ToCommentDto() *CommentDto {
-	replies := make([]ReplyDto, len(c.Reply))
-	for i, reply := range c.Reply {
+	replies := make([]ReplyDto, len(c.Replies))
+	for i, reply := range c.Replies {
 		replies[i] = *reply.ToReplyDto()
 	}
 

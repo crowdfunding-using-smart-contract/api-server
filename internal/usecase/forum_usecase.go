@@ -74,11 +74,11 @@ func (uc *forumUseCase) GetPostByID(id string) (*entity.PostDto, error) {
 	return forum.ToPostDto(), nil
 }
 
-func (uc *forumUseCase) CreateCommentByForumID(forumID string, payload *entity.CommentCreatePayload) (*entity.CommentDto, error) {
+func (uc *forumUseCase) CreateCommentByForumID(postID string, payload *entity.CommentCreatePayload) (*entity.CommentDto, error) {
 	comment, err := uc.forumRepository.CreateComment(&entity.Comment{
 		Content:  payload.Content,
 		AuthorID: uuid.MustParse(payload.AuthorID),
-		ForumID:  uuid.MustParse(forumID),
+		PostID:   uuid.MustParse(postID),
 	})
 	if err != nil {
 		return nil, err

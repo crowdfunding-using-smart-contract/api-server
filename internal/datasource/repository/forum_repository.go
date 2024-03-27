@@ -29,7 +29,7 @@ func NewForumRepository(db *gorm.DB) ForumRepository {
 	return &forumRepository{db, logger}
 }
 
-func (repo *forumRepository) ListPosts(findOptions pagination.PaginateFindOptions) (forums []entity.Post) {
+func (repo *forumRepository) ListPosts(findOptions pagination.PaginateFindOptions) (posts []entity.Post) {
 	result := repo.db.
 		Limit(findOptions.Limit).
 		Offset(findOptions.Skip).
@@ -39,13 +39,14 @@ func (repo *forumRepository) ListPosts(findOptions pagination.PaginateFindOption
 		Preload("Project.Category").
 		Preload("Project.SubCategory").
 		Preload("Comments").
-		Find(&forums)
+		Preload("Comments.Replies").
+		Find(&posts)
 	if result.Error != nil {
 		repo.logger.Error().Err(result.Error).Msg("failed to list posts")
 		return
 	}
 
-	return forums
+	return posts
 }
 
 func (repo *forumRepository) CountPost() int64 {
@@ -77,6 +78,8 @@ func (repo *forumRepository) FindPostByID(id uuid.UUID) (*entity.Post, error) {
 		Preload("Author").
 		Preload("Comments").
 		Preload("Comments.Author").
+		Preload("Comments.Replies").
+		Preload("Comments.Replies.Author").
 		Where("id = ?", id).
 		First(&forum)
 	if result.Error != nil {
