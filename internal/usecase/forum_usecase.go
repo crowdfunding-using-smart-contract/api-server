@@ -3,8 +3,12 @@ package usecase
 import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/pkg/apperrors"
 	"fund-o/api-server/pkg/pagination"
+	"fund-o/api-server/pkg/uploader"
 	"github.com/google/uuid"
+	"mime/multipart"
+	"net/http"
 )
 
 type ForumUseCase interface {
@@ -13,19 +17,23 @@ type ForumUseCase interface {
 	GetPostByID(id string) (*entity.PostDto, error)
 	CreateCommentByForumID(forumID string, comment *entity.CommentCreatePayload) (*entity.CommentDto, error)
 	CreateReplyByCommentID(commentID string, payload *entity.ReplyCreatePayload) (*entity.ReplyDto, error)
+	UploadPostImage(file *multipart.FileHeader) (string, apperrors.Error)
 }
 
 type forumUseCase struct {
 	forumRepository repository.ForumRepository
+	imageUploader   uploader.ImageUploader
 }
 
 type ForumUseCaseOptions struct {
 	repository.ForumRepository
+	uploader.ImageUploader
 }
 
 func NewForumUseCase(options *ForumUseCaseOptions) ForumUseCase {
 	return &forumUseCase{
 		forumRepository: options.ForumRepository,
+		imageUploader:   options.ImageUploader,
 	}
 }
 
@@ -98,4 +106,13 @@ func (uc *forumUseCase) CreateReplyByCommentID(commentID string, payload *entity
 	}
 
 	return reply.ToReplyDto(), nil
+}
+
+func (uc *forumUseCase) UploadPostImage(file *multipart.FileHeader) (string, apperrors.Error) {
+	image, err := uc.imageUploader.Upload(uploader.PostImageFolder, file)
+	if err != nil {
+		return "", apperrors.New(http.StatusInternalServerError, "Failed to upload post image")
+	}
+
+	return image, nil
 }

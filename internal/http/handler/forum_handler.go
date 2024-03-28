@@ -8,6 +8,7 @@ import (
 	"fund-o/api-server/pkg/pagination"
 	"fund-o/api-server/pkg/token"
 	"github.com/gin-gonic/gin"
+	"mime/multipart"
 	"net/http"
 )
 
@@ -168,4 +169,40 @@ func (h *ForumHandler) CreateReply(c *gin.Context) {
 	}
 
 	c.JSON(makeHttpResponse(http.StatusCreated, replyDto))
+}
+
+// UploadImage godoc
+// @summary Upload Post Image
+// @description Upload post image
+// @tags forums
+// @id UploadImage
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param image formData file true "post image file"
+// @failure 400 {object} handler.ErrorResponse
+// @failure 500 {object} handler.ErrorResponse
+// @router /posts/upload [post]
+func (h *ForumHandler) UploadImage(c *gin.Context) {
+	var req struct {
+		Image *multipart.FileHeader `form:"image" binding:"required"`
+	}
+
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error upload post image: %v", err.Error())))
+		return
+	}
+
+	imageUrl, uploadError := h.forumUseCase.UploadPostImage(req.Image)
+	if uploadError != nil {
+		c.JSON(makeHttpErrorResponse(uploadError.Status(), uploadError.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": 1,
+		"file": gin.H{
+			"url": imageUrl,
+		},
+	})
 }

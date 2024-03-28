@@ -411,12 +411,9 @@ definitions:
     type: object
   fund-o_api-server_internal_entity.ReplyCreatePayload:
     properties:
-      comment_id:
-        type: string
       content:
         type: string
     required:
-    - comment_id
     - content
     type: object
   internal_http_handler.RenewAccessTokenPayload:
@@ -1044,6 +1041,34 @@ paths:
       summary: Get Transaction
       tags:
       - transasctions
+  /upload:
+    post:
+      consumes:
+      - application/json
+      description: Upload post image
+      operationId: UploadImage
+      parameters:
+      - description: post image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload Post Image
+      tags:
+      - forums
   /users/{id}:
     patch:
       consumes:

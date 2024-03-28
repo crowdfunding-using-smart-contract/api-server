@@ -147,6 +147,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	})
 	forumUseCase := usecase.NewForumUseCase(&usecase.ForumUseCaseOptions{
 		ForumRepository: forumRepository,
+		ImageUploader:   imageUploader,
 	})
 
 	// Task Processor
@@ -245,6 +246,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		postRoute.POST("", authMiddleware, forumHandler.CreatePost)
 		postRoute.GET("/:id", forumHandler.GetPostByID)
 		postRoute.POST("/:id/comments", authMiddleware, forumHandler.CreateComment)
+		postRoute.POST("/upload", authMiddleware, forumHandler.UploadImage)
 	}
 	commentRoute := routeV1.Group("/comments")
 	{

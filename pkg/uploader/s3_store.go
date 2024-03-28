@@ -16,6 +16,7 @@ import (
 const (
 	ProjectImageFolder = "projects"
 	ProfileImageFolder = "profiles"
+	PostImageFolder    = "posts"
 )
 
 type s3Store struct {
