@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fund-o/api-server/pkg/pagination"
 	"mime/multipart"
 	"time"
 
@@ -58,6 +59,13 @@ type ProjectRating struct {
 } // @name ProjectRating
 
 // Secondary types
+
+type ProjectListParams struct {
+	pagination.PaginateOptions
+	Query         string `form:"q"`
+	CategoryID    string `form:"category"`
+	SubCategoryID string `form:"sub_category"`
+}
 
 type ProjectCreatePayload struct {
 	Title         string                `form:"title" binding:"required"`

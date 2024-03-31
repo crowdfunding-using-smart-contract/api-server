@@ -442,6 +442,50 @@
                 }
             }
         },
+        "/posts/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Upload post image",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forums"
+                ],
+                "summary": "Upload Post Image",
+                "operationId": "UploadImage",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "post image file",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/posts/{id}": {
             "get": {
                 "description": "Get post by id",
@@ -541,6 +585,54 @@
             }
         },
         "/projects": {
+            "get": {
+                "description": "List projects",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "List Projects",
+                "operationId": "ListProjects",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "number of page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of data per page",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResultResponse-PaginateResult-Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -924,50 +1016,6 @@
                 }
             }
         },
-        "/upload": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Upload post image",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "forums"
-                ],
-                "summary": "Upload Post Image",
-                "operationId": "UploadImage",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "post image file",
-                        "name": "image",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/users/me": {
             "get": {
                 "security": [
@@ -1132,6 +1180,35 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/Post"
+                    }
+                },
+                "from": {
+                    "type": "integer"
+                },
+                "last_page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "to": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PaginateResult-Project": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Project"
                     }
                 },
                 "from": {
@@ -1332,6 +1409,20 @@
             "properties": {
                 "result": {
                     "$ref": "#/definitions/PaginateResult-Post"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResultResponse-PaginateResult-Project": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "$ref": "#/definitions/PaginateResult-Project"
                 },
                 "status": {
                     "type": "string"

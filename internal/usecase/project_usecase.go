@@ -6,6 +6,7 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/apperrors"
+	"fund-o/api-server/pkg/pagination"
 	"fund-o/api-server/pkg/uploader"
 	"gorm.io/gorm"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 )
 
 type ProjectUseCase interface {
+	ListProjects(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ProjectDto]
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
 	GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
@@ -38,6 +40,27 @@ func NewProjectUseCase(options *ProjectUseCaseOptions) ProjectUseCase {
 		projectRepository: options.ProjectRepository,
 		imageUploader:     options.ImageUploader,
 	}
+}
+
+func (uc *projectUseCase) ListProjects(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ProjectDto] {
+	result := pagination.MakePaginateResult(pagination.MakePaginateContextParameters[entity.ProjectDto]{
+		PaginateOptions: paginateOptions,
+		CountDocuments: func() int64 {
+			return uc.projectRepository.Count()
+		},
+		FindDocuments: func(findOptions pagination.PaginateFindOptions) []entity.ProjectDto {
+			documents := uc.projectRepository.FindAll(findOptions)
+
+			projectDtos := make([]entity.ProjectDto, 0, len(documents))
+			for _, document := range documents {
+				projectDtos = append(projectDtos, *document.ToProjectDto())
+			}
+
+			return projectDtos
+		},
+	})
+
+	return result
 }
 
 func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {

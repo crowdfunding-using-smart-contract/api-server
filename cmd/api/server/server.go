@@ -233,6 +233,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	}
 	projectRoute := routeV1.Group("/projects")
 	{
+		projectRoute.GET("", projectHandler.ListProjects)
 		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
 		projectRoute.GET("/:id", projectHandler.GetProjectByID)
 		projectRoute.GET("/me", authMiddleware, projectHandler.GetOwnProjects)

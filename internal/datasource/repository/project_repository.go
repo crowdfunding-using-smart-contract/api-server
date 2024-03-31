@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/pkg/pagination"
 	"github.com/rs/zerolog"
 
 	"github.com/google/uuid"
@@ -11,6 +12,8 @@ import (
 )
 
 type ProjectRepository interface {
+	FindAll(findOptions pagination.PaginateFindOptions) []entity.Project
+	Count() int64
 	Create(project *entity.Project) (*entity.Project, error)
 	FindByID(projectID uuid.UUID) (*entity.Project, error)
 	FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Project, error)
@@ -26,6 +29,33 @@ type projectRepository struct {
 func NewProjectRepository(db *gorm.DB) ProjectRepository {
 	logger := log.With().Str("module", "project_repository").Logger()
 	return &projectRepository{db, logger}
+}
+
+func (repo *projectRepository) FindAll(findOptions pagination.PaginateFindOptions) (projects []entity.Project) {
+	result := repo.db.
+		Limit(findOptions.Limit).
+		Offset(findOptions.Skip).
+		Preload("Category").
+		Preload("SubCategory").
+		Preload("Owner").
+		Preload("Ratings").
+		Find(&projects)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to list projects")
+		return
+	}
+
+	return projects
+}
+
+func (repo *projectRepository) Count() int64 {
+	var count int64
+	if result := repo.db.Model(&entity.Project{}).Count(&count); result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to count projects")
+		return 0
+	}
+
+	return count
 }
 
 func (repo *projectRepository) Create(project *entity.Project) (*entity.Project, error) {

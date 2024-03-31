@@ -51,6 +51,25 @@ definitions:
       total:
         type: integer
     type: object
+  PaginateResult-Project:
+    properties:
+      current_page:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/Project'
+        type: array
+      from:
+        type: integer
+      last_page:
+        type: integer
+      per_page:
+        type: integer
+      to:
+        type: integer
+      total:
+        type: integer
+    type: object
   PaginateResult-Transaction:
     properties:
       current_page:
@@ -170,6 +189,15 @@ definitions:
     properties:
       result:
         $ref: '#/definitions/PaginateResult-Post'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-PaginateResult-Project:
+    properties:
+      result:
+        $ref: '#/definitions/PaginateResult-Project'
       status:
         type: string
       status_code:
@@ -791,7 +819,67 @@ paths:
       summary: Create Comment
       tags:
       - forums
+  /posts/upload:
+    post:
+      consumes:
+      - application/json
+      description: Upload post image
+      operationId: UploadImage
+      parameters:
+      - description: post image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload Post Image
+      tags:
+      - forums
   /projects:
+    get:
+      consumes:
+      - application/json
+      description: List projects
+      operationId: ListProjects
+      parameters:
+      - description: number of page
+        in: query
+        name: page
+        type: integer
+      - description: size of data per page
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-PaginateResult-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Projects
+      tags:
+      - projects
     post:
       consumes:
       - multipart/form-data
@@ -1041,34 +1129,6 @@ paths:
       summary: Get Transaction
       tags:
       - transasctions
-  /upload:
-    post:
-      consumes:
-      - application/json
-      description: Upload post image
-      operationId: UploadImage
-      parameters:
-      - description: post image file
-        in: formData
-        name: image
-        required: true
-        type: file
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      summary: Upload Post Image
-      tags:
-      - forums
   /users/{id}:
     patch:
       consumes:

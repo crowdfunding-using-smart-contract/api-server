@@ -5,6 +5,7 @@ import (
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/internal/usecase"
+	"fund-o/api-server/pkg/pagination"
 	"fund-o/api-server/pkg/token"
 	"net/http"
 
@@ -29,6 +30,30 @@ func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 		projectCategoryUseCase: options.ProjectCategoryUseCase,
 		userUseCase:            options.UserUseCase,
 	}
+}
+
+// ListProjects godoc
+// @summary List Projects
+// @description List projects
+// @tags projects
+// @id ListProjects
+// @accept json
+// @produce json
+// @param page query int false "number of page"
+// @param size query int false "size of data per page"
+// @response 200 {object} handler.ResultResponse[pagination.PaginateResult[entity.ProjectDto]] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects [get]
+func (h *ProjectHandler) ListProjects(c *gin.Context) {
+	var paginateOptions pagination.PaginateOptions
+	if err := c.ShouldBindQuery(&paginateOptions); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error list forums: %v", err.Error())))
+		return
+	}
+
+	projects := h.projectUseCase.ListProjects(paginateOptions)
+	c.JSON(makeHttpResponse(http.StatusOK, projects))
 }
 
 // CreateProject godoc
@@ -194,11 +219,6 @@ func (h *ProjectHandler) VerifyProjectRating(c *gin.Context) {
 	rated, err := h.projectUseCase.IsRatedProject(userID, projectID)
 	if err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error verify project rating: %v", err.Error())))
-		return
-	}
-
-	if rated {
-		c.JSON(makeHttpMessageResponse(http.StatusConflict, "user already rated this project"))
 		return
 	}
 
