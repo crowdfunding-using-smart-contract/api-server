@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"mime/multipart"
 	"time"
 
 	"fund-o/api-server/pkg/helper"
@@ -48,26 +49,24 @@ type UserDto struct {
 // Secondary types
 
 type UserCreatePayload struct {
-	Email                string `json:"email" binding:"required"`
-	Password             string `json:"password" binding:"required"`
-	PasswordConfirmation string `json:"password_confirmation" binding:"required"`
-	Firstname            string `json:"firstname" binding:"required"`
-	Lastname             string `json:"lastname" binding:"required"`
-	BirthDate            string `json:"birthdate" binding:"required"`
-	Gender               string `json:"gender" binding:"required"`
+	Email                string `json:"email" binding:"required" example:"someemail@gmail.com"`
+	Password             string `json:"password" binding:"required" example:"@Password123"`
+	PasswordConfirmation string `json:"password_confirmation" binding:"required" example:"@Password123"`
+	Firstname            string `json:"firstname" binding:"required" example:"John"`
+	Lastname             string `json:"lastname" binding:"required" example:"Doe"`
+	BirthDate            string `json:"birthdate" binding:"required" example:"2002-04-16T00:00:00Z"`
+	Gender               string `json:"gender" binding:"required" example:"m"`
 } // @name UserCreatePayload
 
 type UserUpdatePayload struct {
-	Email           string `json:"email"`
-	Firstname       string `json:"firstname"`
-	Lastname        string `json:"lastname"`
-	ProfileImage    string `json:"profile_image"`
-	IsEmailVerified bool   `json:"is_email_verified"`
+	Email           string                `form:"email"`
+	ProfileImage    *multipart.FileHeader `form:"profile_image"`
+	IsEmailVerified bool                  `form:"is_email_verified"`
 } // @name UserUpdatePayload
 
 type UserLoginPayload struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required" example:"someemail@gmail.com"`
+	Password string `json:"password" binding:"required" example:"@Password123"`
 } // @name UserLoginPayload
 
 type UserLoginResponse struct {
@@ -96,7 +95,7 @@ func (u *User) ToUserDto() *UserDto {
 }
 
 func (g Gender) String() string {
-	return [...]string{"", "M", "F", "NS"}[g]
+	return [...]string{"", "m", "f", "ns"}[g]
 }
 
 func (r UserRole) String() string {

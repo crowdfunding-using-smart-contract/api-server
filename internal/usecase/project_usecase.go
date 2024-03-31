@@ -6,8 +6,10 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/apperrors"
+	"fund-o/api-server/pkg/pagination"
 	"fund-o/api-server/pkg/uploader"
 	"gorm.io/gorm"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,7 +17,9 @@ import (
 )
 
 type ProjectUseCase interface {
+	ListProjects(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ProjectDto]
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
+	GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
 	CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error
 	IsRatedProject(userID string, projectID string) (bool, error)
@@ -36,6 +40,27 @@ func NewProjectUseCase(options *ProjectUseCaseOptions) ProjectUseCase {
 		projectRepository: options.ProjectRepository,
 		imageUploader:     options.ImageUploader,
 	}
+}
+
+func (uc *projectUseCase) ListProjects(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ProjectDto] {
+	result := pagination.MakePaginateResult(pagination.MakePaginateContextParameters[entity.ProjectDto]{
+		PaginateOptions: paginateOptions,
+		CountDocuments: func() int64 {
+			return uc.projectRepository.Count()
+		},
+		FindDocuments: func(findOptions pagination.PaginateFindOptions) []entity.ProjectDto {
+			documents := uc.projectRepository.FindAll(findOptions)
+
+			projectDtos := make([]entity.ProjectDto, 0, len(documents))
+			for _, document := range documents {
+				projectDtos = append(projectDtos, *document.ToProjectDto())
+			}
+
+			return projectDtos
+		},
+	})
+
+	return result
 }
 
 func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error) {
@@ -86,6 +111,24 @@ func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*
 	}
 
 	return newProject.ToProjectDto(), nil
+}
+
+func (uc *projectUseCase) GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error) {
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
+		return nil, apperrors.New(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	project, err := uc.projectRepository.FindByID(projectUUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.New(http.StatusNotFound, "Project not found")
+		}
+
+		return nil, apperrors.New(http.StatusInternalServerError, "Failed to get project")
+	}
+
+	return project.ToProjectDto(), nil
 }
 
 func (uc *projectUseCase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error) {

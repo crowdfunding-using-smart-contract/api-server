@@ -145,9 +145,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		User:                  user,
 	}
 
-	c.SetCookie("session_id", session.ID, 60*60*24, "/", ".", false, false)
-	c.SetCookie("access_token", accessToken, 60*60*24, "/", ".", false, false)
-	c.SetCookie("refresh_token", refreshToken, 60*60*24, "/", ".", false, false)
 	c.JSON(makeHttpResponse(http.StatusOK, response))
 }
 

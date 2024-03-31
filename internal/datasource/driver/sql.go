@@ -3,10 +3,8 @@ package driver
 import (
 	"errors"
 	"fmt"
-
 	"fund-o/api-server/internal/datasource/driver/seeds"
 	"fund-o/api-server/internal/entity"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
@@ -119,6 +117,9 @@ func (sql *sqlContext) autoMigrateUp() error {
 		&entity.ProjectSubCategory{},
 		&entity.ProjectRating{},
 		&entity.VerifyEmail{},
+		&entity.Post{},
+		&entity.Comment{},
+		&entity.Reply{},
 	); err != nil {
 		return err
 	}

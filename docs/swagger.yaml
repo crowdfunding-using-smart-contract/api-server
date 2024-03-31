@@ -1,4 +1,19 @@
 definitions:
+  Comment:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      replies:
+        items:
+          $ref: '#/definitions/Reply'
+        type: array
+    type: object
   ErrorResponse:
     properties:
       error:
@@ -15,6 +30,44 @@ definitions:
       status:
         type: string
       status_code:
+        type: integer
+    type: object
+  PaginateResult-Post:
+    properties:
+      current_page:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/Post'
+        type: array
+      from:
+        type: integer
+      last_page:
+        type: integer
+      per_page:
+        type: integer
+      to:
+        type: integer
+      total:
+        type: integer
+    type: object
+  PaginateResult-Project:
+    properties:
+      current_page:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/Project'
+        type: array
+      from:
+        type: integer
+      last_page:
+        type: integer
+      per_page:
+        type: integer
+      to:
+        type: integer
+      total:
         type: integer
     type: object
   PaginateResult-Transaction:
@@ -36,13 +89,34 @@ definitions:
       total:
         type: integer
     type: object
+  Post:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      comments:
+        items:
+          $ref: '#/definitions/Comment'
+        type: array
+      content:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      project:
+        $ref: '#/definitions/Project'
+      title:
+        type: string
+    type: object
   Project:
     properties:
       category:
         $ref: '#/definitions/ProjectCategory'
       created_at:
         type: string
-      current_amount:
+      current_funding:
         type: number
       description:
         type: string
@@ -68,7 +142,7 @@ definitions:
         $ref: '#/definitions/ProjectSubCategory'
       sub_title:
         type: string
-      target_amount:
+      target_funding:
         type: number
       title:
         type: string
@@ -91,6 +165,44 @@ definitions:
       name:
         type: string
     type: object
+  Reply:
+    properties:
+      author:
+        $ref: '#/definitions/User'
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+    type: object
+  ResultResponse-Comment:
+    properties:
+      result:
+        $ref: '#/definitions/Comment'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-PaginateResult-Post:
+    properties:
+      result:
+        $ref: '#/definitions/PaginateResult-Post'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-PaginateResult-Project:
+    properties:
+      result:
+        $ref: '#/definitions/PaginateResult-Project'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   ResultResponse-PaginateResult-Transaction:
     properties:
       result:
@@ -100,10 +212,28 @@ definitions:
       status_code:
         type: integer
     type: object
+  ResultResponse-Post:
+    properties:
+      result:
+        $ref: '#/definitions/Post'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
   ResultResponse-Project:
     properties:
       result:
         $ref: '#/definitions/Project'
+      status:
+        type: string
+      status_code:
+        type: integer
+    type: object
+  ResultResponse-Reply:
+    properties:
+      result:
+        $ref: '#/definitions/Reply'
       status:
         type: string
       status_code:
@@ -218,18 +348,25 @@ definitions:
   UserCreatePayload:
     properties:
       birthdate:
+        example: "2002-04-16T00:00:00Z"
         type: string
       email:
+        example: someemail@gmail.com
         type: string
       firstname:
+        example: John
         type: string
       gender:
+        example: m
         type: string
       lastname:
+        example: Doe
         type: string
       password:
+        example: '@Password123'
         type: string
       password_confirmation:
+        example: '@Password123'
         type: string
     required:
     - birthdate
@@ -243,8 +380,10 @@ definitions:
   UserLoginPayload:
     properties:
       email:
+        example: someemail@gmail.com
         type: string
       password:
+        example: '@Password123'
         type: string
     required:
     - email
@@ -265,6 +404,28 @@ definitions:
       user:
         $ref: '#/definitions/User'
     type: object
+  fund-o_api-server_internal_entity.CommentCreatePayload:
+    properties:
+      content:
+        type: string
+    required:
+    - content
+    type: object
+  fund-o_api-server_internal_entity.PostCreatePayload:
+    properties:
+      content:
+        type: string
+      description:
+        type: string
+      project_id:
+        type: string
+      title:
+        type: string
+    required:
+    - description
+    - project_id
+    - title
+    type: object
   fund-o_api-server_internal_entity.ProjectCreatePayload:
     type: object
   fund-o_api-server_internal_entity.ProjectRatingCreatePayload:
@@ -275,6 +436,13 @@ definitions:
         type: number
     required:
     - rating
+    type: object
+  fund-o_api-server_internal_entity.ReplyCreatePayload:
+    properties:
+      content:
+        type: string
+    required:
+    - content
     type: object
   internal_http_handler.RenewAccessTokenPayload:
     properties:
@@ -469,6 +637,44 @@ paths:
       summary: Verify Email
       tags:
       - auth
+  /comments/{id}/replies:
+    post:
+      consumes:
+      - application/json
+      description: Create reply for comment
+      operationId: CreateReply
+      parameters:
+      - description: comment id to reply
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: reply payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.ReplyCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResultResponse-Reply'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Reply
+      tags:
+      - forums
   /hello:
     get:
       description: Health checking for the service
@@ -488,7 +694,192 @@ paths:
       summary: Health Check
       tags:
       - healthcheck
+  /posts:
+    get:
+      consumes:
+      - application/json
+      description: List posts
+      operationId: ListPosts
+      parameters:
+      - description: number of page
+        in: query
+        name: page
+        type: integer
+      - description: size of data per page
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-PaginateResult-Post'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Posts
+      tags:
+      - forums
+    post:
+      consumes:
+      - application/json
+      description: Create post
+      operationId: CreatePost
+      parameters:
+      - description: post payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.PostCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResultResponse-Post'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Post
+      tags:
+      - forums
+  /posts/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get post by id
+      operationId: GetPostByID
+      parameters:
+      - description: post id to get
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Post'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Post by ID
+      tags:
+      - forums
+  /posts/{id}/comments:
+    post:
+      consumes:
+      - application/json
+      description: Create comment for forum
+      operationId: CreateComment
+      parameters:
+      - description: forum id to comment
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: comment payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/fund-o_api-server_internal_entity.CommentCreatePayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResultResponse-Comment'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Comment
+      tags:
+      - forums
+  /posts/upload:
+    post:
+      consumes:
+      - application/json
+      description: Upload post image
+      operationId: UploadImage
+      parameters:
+      - description: post image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Upload Post Image
+      tags:
+      - forums
   /projects:
+    get:
+      consumes:
+      - application/json
+      description: List projects
+      operationId: ListProjects
+      parameters:
+      - description: number of page
+        in: query
+        name: page
+        type: integer
+      - description: size of data per page
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-PaginateResult-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Projects
+      tags:
+      - projects
     post:
       consumes:
       - multipart/form-data
@@ -519,6 +910,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create Project
+      tags:
+      - projects
+  /projects/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get project by ID
+      operationId: GetProjectByID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Project by ID
       tags:
       - projects
   /projects/{id}/ratings:
@@ -605,7 +1026,7 @@ paths:
       summary: List Project Categories
       tags:
       - projects
-  /projects/own:
+  /projects/me:
     get:
       description: Get own projects with authenticate creator
       operationId: GetOwnProjects
@@ -708,6 +1129,47 @@ paths:
       summary: Get Transaction
       tags:
       - transasctions
+  /users/{id}:
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Update user by id
+      operationId: UpdateUser
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User profile image
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResultResponse-User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update user
+      tags:
+      - users
   /users/me:
     get:
       description: Get current user by validating authorization token
