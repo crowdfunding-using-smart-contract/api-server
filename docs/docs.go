@@ -1633,6 +1633,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "display_name": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -1647,6 +1650,9 @@ const docTemplate = `{
                 },
                 "is_email_verified": {
                     "type": "boolean"
+                },
+                "metamask_account_id": {
+                    "type": "string"
                 },
                 "profile_image": {
                     "type": "string"

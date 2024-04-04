@@ -55,6 +55,7 @@ func (uc *userUseCase) CreateUser(user *entity.UserCreatePayload) (*entity.UserD
 		Email:          user.Email,
 		Firstname:      user.Firstname,
 		Lastname:       user.Lastname,
+		DisplayName:    fmt.Sprintf("%s %s", user.Firstname, user.Lastname),
 		HashedPassword: hashedPassword,
 		BirthDate:      birthDate,
 		Gender:         entity.ParseGender(user.Gender),
@@ -117,9 +118,11 @@ func (uc *userUseCase) UpdateUserByID(id string, user *entity.UserUpdatePayload)
 	}
 
 	payload := entity.User{
-		Email:           user.Email,
-		ProfileImage:    profileImage,
-		IsEmailVerified: user.IsEmailVerified,
+		Email:             user.Email,
+		DisplayName:       user.DisplayName,
+		ProfileImage:      profileImage,
+		MetaMaskAccountID: user.MetamaskAccountID,
+		IsEmailVerified:   user.IsEmailVerified,
 	}
 
 	updatedUser, err := uc.userRepository.UpdateByID(userID, &payload)
