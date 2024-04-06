@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fund-o/api-server/pkg/pagination"
 	"mime/multipart"
 	"time"
 
@@ -40,8 +41,8 @@ type ProjectDto struct {
 	Location       string                 `json:"location"`
 	Image          string                 `json:"image"`
 	Rating         float32                `json:"rating"`
-	TargetFunding  decimal.Decimal        `json:"target_amount"`
-	CurrentFunding decimal.Decimal        `json:"current_amount"`
+	TargetFunding  decimal.Decimal        `json:"target_funding"`
+	CurrentFunding decimal.Decimal        `json:"current_funding"`
 	MonetaryUnit   string                 `json:"monetary_unit"`
 	StartDate      string                 `json:"start_date"`
 	EndDate        string                 `json:"end_date"`
@@ -58,6 +59,13 @@ type ProjectRating struct {
 } // @name ProjectRating
 
 // Secondary types
+
+type ProjectListParams struct {
+	pagination.PaginateOptions
+	Query         string `form:"q"`
+	CategoryID    string `form:"category"`
+	SubCategoryID string `form:"sub_category"`
+}
 
 type ProjectCreatePayload struct {
 	Title         string                `form:"title" binding:"required"`

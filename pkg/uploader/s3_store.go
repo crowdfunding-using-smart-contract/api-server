@@ -16,6 +16,7 @@ import (
 const (
 	ProjectImageFolder = "projects"
 	ProfileImageFolder = "profiles"
+	PostImageFolder    = "posts"
 )
 
 type s3Store struct {
@@ -37,6 +38,7 @@ func NewS3Store(config *S3StoreConfig) (ImageUploader, error) {
 		Config: aws.Config{
 			Region:      aws.String(config.Region),
 			Credentials: credentials.NewStaticCredentials(config.AwsAccessKeyID, config.AwsSecretAccessKey, ""),
+			Logger:      aws.NewDefaultLogger(),
 		},
 	})
 
@@ -73,7 +75,7 @@ func (s *s3Store) Upload(folder string, file *multipart.FileHeader) (string, err
 
 	result, err := s.uploader.UploadWithContext(context.TODO(), &s3manager.UploadInput{
 		Bucket: aws.String(s.bucket),
-		Key:    aws.String(fmt.Sprintf("%s/%s-%s", folder, id.String(), fileExtension)),
+		Key:    aws.String(fmt.Sprintf("%s/%s.%s", folder, id.String(), fileExtension)),
 		Body:   f,
 		ACL:    aws.String("public-read"),
 	})

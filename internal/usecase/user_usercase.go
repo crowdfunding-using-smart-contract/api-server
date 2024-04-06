@@ -5,6 +5,7 @@ import (
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/password"
+	"fund-o/api-server/pkg/uploader"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,15 +21,18 @@ type UserUseCase interface {
 
 type userUseCase struct {
 	userRepository repository.UserRepository
+	imageUploader  uploader.ImageUploader
 }
 
 type UserUseCaseOptions struct {
-	UserRepository repository.UserRepository
+	repository.UserRepository
+	uploader.ImageUploader
 }
 
 func NewUserUseCase(options *UserUseCaseOptions) UserUseCase {
 	return &userUseCase{
 		userRepository: options.UserRepository,
+		imageUploader:  options.ImageUploader,
 	}
 }
 
@@ -51,6 +55,7 @@ func (uc *userUseCase) CreateUser(user *entity.UserCreatePayload) (*entity.UserD
 		Email:          user.Email,
 		Firstname:      user.Firstname,
 		Lastname:       user.Lastname,
+		DisplayName:    fmt.Sprintf("%s %s", user.Firstname, user.Lastname),
 		HashedPassword: hashedPassword,
 		BirthDate:      birthDate,
 		Gender:         entity.ParseGender(user.Gender),
@@ -102,12 +107,22 @@ func (uc *userUseCase) GetUserByEmail(email string) (*entity.UserDto, error) {
 func (uc *userUseCase) UpdateUserByID(id string, user *entity.UserUpdatePayload) (*entity.UserDto, error) {
 	userID := uuid.MustParse(id)
 
+	var profileImage string
+	if user.ProfileImage != nil {
+		imageSource, err := uc.imageUploader.Upload(uploader.ProfileImageFolder, user.ProfileImage)
+		if err != nil {
+			return nil, err
+		}
+
+		profileImage = imageSource
+	}
+
 	payload := entity.User{
-		Email:           user.Email,
-		Firstname:       user.Firstname,
-		Lastname:        user.Lastname,
-		ProfileImage:    user.ProfileImage,
-		IsEmailVerified: user.IsEmailVerified,
+		Email:             user.Email,
+		DisplayName:       user.DisplayName,
+		ProfileImage:      profileImage,
+		MetaMaskAccountID: user.MetamaskAccountID,
+		IsEmailVerified:   user.IsEmailVerified,
 	}
 
 	updatedUser, err := uc.userRepository.UpdateByID(userID, &payload)

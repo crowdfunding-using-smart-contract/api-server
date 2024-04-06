@@ -33,7 +33,7 @@ func (s *EmailSenderSuite) TestSendEmailWithGmail() {
 	<h1>Hello world</h1>
 	<p>This is a test message from <a href="https://bizzy.cool">DIZZY</a></p>
 	`
-	to := []string{"danzkikii@gmail.com"}
+	to := []string{"test-2669dc@test.mailgenius.com"}
 
 	err := sender.SendEmail(subject, content, to, nil, nil)
 	require.NoError(s.T(), err)

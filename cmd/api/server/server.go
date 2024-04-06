@@ -122,6 +122,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	projectRepository := repository.NewProjectRepository(datasource.GetSqlDB())
 	projectCategoryRepository := repository.NewProjectCategoryRepository(datasource.GetSqlDB())
 	verifyEmailRepository := repository.NewVerifyEmailRepository(datasource.GetSqlDB())
+	forumRepository := repository.NewForumRepository(datasource.GetSqlDB())
 
 	// UseCases
 	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
@@ -129,6 +130,7 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	})
 	userUseCase := usecase.NewUserUseCase(&usecase.UserUseCaseOptions{
 		UserRepository: userRepository,
+		ImageUploader:  imageUploader,
 	})
 	sessionUseCase := usecase.NewSessionUseCase(&usecase.SessionUseCaseOptions{
 		SessionRepository: sessionRepository,
@@ -142,6 +144,10 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	})
 	verifyEmailUseCase := usecase.NewVerifyEmailUseCase(&usecase.VerifyEmailUseCaseOptions{
 		VerifyEmailRepository: verifyEmailRepository,
+	})
+	forumUseCase := usecase.NewForumUseCase(&usecase.ForumUseCaseOptions{
+		ForumRepository: forumRepository,
+		ImageUploader:   imageUploader,
 	})
 
 	// Task Processor
@@ -178,6 +184,9 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		UserUseCase:            userUseCase,
 		ProjectCategoryUseCase: projectCategoryUseCase,
 	})
+	forumHandler := handler.NewForumHandler(&handler.ForumHandlerOptions{
+		ForumUseCase: forumUseCase,
+	})
 
 	router := gin.New()
 
@@ -206,7 +215,6 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		transactionRoute.GET("/:id", transactionHandler.GetTransaction)
 		transactionRoute.POST("", transactionHandler.CreateTransaction)
 	}
-
 	authRoute := routeV1.Group("/auth")
 	{
 		authRoute.POST("/register", authHandler.Register)
@@ -218,19 +226,32 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 		// 	c.Redirect(http.StatusTemporaryRedirect, )
 		// })
 	}
-
 	userRoute := routeV1.Group("/users")
 	{
 		userRoute.GET("/me", authMiddleware, userHandler.GetMe)
+		userRoute.PATCH("/:id", authMiddleware, userHandler.UpdateUser)
 	}
-
 	projectRoute := routeV1.Group("/projects")
 	{
+		projectRoute.GET("", projectHandler.ListProjects)
 		projectRoute.POST("", authMiddleware, projectHandler.CreateProject)
-		projectRoute.GET("/own", authMiddleware, projectHandler.GetOwnProjects)
+		projectRoute.GET("/:id", projectHandler.GetProjectByID)
+		projectRoute.GET("/me", authMiddleware, projectHandler.GetOwnProjects)
 		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
 		projectRoute.POST("/:id/ratings", authMiddleware, projectHandler.CreateProjectRating)
 		projectRoute.GET("/:id/ratings/verify", authMiddleware, projectHandler.VerifyProjectRating)
+	}
+	postRoute := routeV1.Group("/posts")
+	{
+		postRoute.GET("", forumHandler.ListPosts)
+		postRoute.POST("", authMiddleware, forumHandler.CreatePost)
+		postRoute.GET("/:id", forumHandler.GetPostByID)
+		postRoute.POST("/:id/comments", authMiddleware, forumHandler.CreateComment)
+		postRoute.POST("/upload", authMiddleware, forumHandler.UploadImage)
+	}
+	commentRoute := routeV1.Group("/comments")
+	{
+		commentRoute.POST("/:id/replies", authMiddleware, forumHandler.CreateReply)
 	}
 
 	return router
