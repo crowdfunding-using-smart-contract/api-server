@@ -32,7 +32,7 @@ type User struct {
 	ProfileImage      string
 	BirthDate         time.Time `gorm:"not null"`
 	Gender            Gender    `gorm:"not null;default:3"`
-	MetaMaskAccountID string    `gorm:"uniqueIndex;default:'empty'"`
+	MetaMaskAccountID string    `gorm:"default:'empty'"`
 	IsEmailVerified   bool      `gorm:"not null;default:false"`
 }
 
@@ -75,14 +75,14 @@ type UserLoginPayload struct {
 	Password string `json:"password" binding:"required" example:"@Password123"`
 } // @name UserLoginPayload
 
-type UserLoginResponse struct {
+type UserAuthenticateResponse struct {
 	SessionID             string    `json:"session_id"`
 	AccessToken           string    `json:"access_token"`
 	AccessTokenExpiredAt  time.Time `json:"access_token_expired_at"`
 	RefreshToken          string    `json:"refresh_token"`
 	RefreshTokenExpiredAt time.Time `json:"refresh_token_expired_at"`
 	User                  *UserDto  `json:"user"`
-} // @name UserLoginResponse
+} // @name UserAuthenticateResponse
 
 // Parse functions
 

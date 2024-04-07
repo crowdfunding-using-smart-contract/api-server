@@ -2,11 +2,11 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"fund-o/api-server/internal/entity"
 	_ "fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/internal/usecase"
+	"fund-o/api-server/pkg/apperrors"
 	"fund-o/api-server/pkg/token"
 	"net/http"
 
@@ -42,6 +42,16 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 	payload := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 	user, err := h.userUseCase.GetUserById(payload.UserID)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidUserID) {
+			c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+			return
+		}
+
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			c.JSON(makeHttpErrorResponse(http.StatusNotFound, err.Error()))
+			return
+		}
+
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
 		return
 	}
@@ -76,7 +86,6 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	var payload entity.UserUpdatePayload
 	if err := c.ShouldBind(&payload); err != nil {
-		fmt.Println("error", err.Error())
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
 		return
 	}

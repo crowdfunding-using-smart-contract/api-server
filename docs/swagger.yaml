@@ -257,10 +257,10 @@ definitions:
       status_code:
         type: integer
     type: object
-  ResultResponse-UserLoginResponse:
+  ResultResponse-UserAuthenticateResponse:
     properties:
       result:
-        $ref: '#/definitions/UserLoginResponse'
+        $ref: '#/definitions/UserAuthenticateResponse'
       status:
         type: string
       status_code:
@@ -349,6 +349,21 @@ definitions:
       updated_at:
         type: string
     type: object
+  UserAuthenticateResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expired_at:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expired_at:
+        type: string
+      session_id:
+        type: string
+      user:
+        $ref: '#/definitions/User'
+    type: object
   UserCreatePayload:
     properties:
       birthdate:
@@ -392,21 +407,6 @@ definitions:
     required:
     - email
     - password
-    type: object
-  UserLoginResponse:
-    properties:
-      access_token:
-        type: string
-      access_token_expired_at:
-        type: string
-      refresh_token:
-        type: string
-      refresh_token_expired_at:
-        type: string
-      session_id:
-        type: string
-      user:
-        $ref: '#/definitions/User'
     type: object
   fund-o_api-server_internal_entity.CommentCreatePayload:
     properties:
@@ -501,7 +501,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ResultResponse-UserLoginResponse'
+            $ref: '#/definitions/ResultResponse-UserAuthenticateResponse'
         "400":
           description: Bad Request
           schema:
@@ -532,7 +532,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ResultResponse-User'
+            $ref: '#/definitions/ResultResponse-UserAuthenticateResponse'
         "400":
           description: Bad Request
           schema:
