@@ -1,12 +1,11 @@
-package tests
+package handler
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"fund-o/api-server/internal/http/handler"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -36,7 +35,7 @@ func (s *HelloSuite) TestGetHelloAPI() {
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
-				var response handler.MessageResponse
+				var response MessageResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -53,7 +52,7 @@ func (s *HelloSuite) TestGetHelloAPI() {
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
-				var response handler.MessageResponse
+				var response MessageResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -67,7 +66,7 @@ func (s *HelloSuite) TestGetHelloAPI() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			c, r := NewTestContext(t, recorder)
+			c, r := gin.CreateTestContext(recorder)
 
 			url := "/hello"
 			c.Request = httptest.NewRequest(http.MethodGet, url, nil)
@@ -76,7 +75,7 @@ func (s *HelloSuite) TestGetHelloAPI() {
 			q.Add("name", tc.query.Name)
 			c.Request.URL.RawQuery = q.Encode()
 
-			r.GET("/hello", handler.GetHelloMessage)
+			r.GET("/hello", GetHelloMessage)
 			r.ServeHTTP(recorder, c.Request)
 			tc.checkResponse(t, recorder)
 		})

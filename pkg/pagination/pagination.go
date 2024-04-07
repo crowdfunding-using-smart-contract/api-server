@@ -3,8 +3,8 @@ package pagination
 import "math"
 
 type PaginateOptions struct {
-	Page int `form:"page"`
-	Size int `form:"size"`
+	Page int `form:"page" binding:"omitempty,min=1"`
+	Size int `form:"size" binding:"omitempty,min=1"`
 }
 
 type PaginateFindOptions struct {

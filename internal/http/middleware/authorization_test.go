@@ -1,8 +1,7 @@
-package tests
+package middleware
 
 import (
 	"fmt"
-	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/pkg/token"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +38,7 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 		{
 			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				s.addAuthorization(t, request, middleware.AuthorizationTypeBearer, userID, time.Minute)
+				s.addAuthorization(t, request, AuthorizationTypeBearer, userID, time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -73,7 +72,7 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 		{
 			name: "ExpiredToken",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				s.addAuthorization(t, request, middleware.AuthorizationTypeBearer, userID, -time.Minute)
+				s.addAuthorization(t, request, AuthorizationTypeBearer, userID, -time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -84,10 +83,10 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
+			c, r := gin.CreateTestContext(recorder)
 
-			c, r := NewTestContext(t, recorder)
 			r.GET("/auth",
-				middleware.AuthMiddleware(s.tokenMaker),
+				AuthMiddleware(s.tokenMaker),
 				func(c *gin.Context) {
 					c.JSON(http.StatusOK, gin.H{})
 				},
@@ -118,7 +117,7 @@ func (s *MiddlewareSuite) addAuthorization(
 	require.NotEmpty(t, payload)
 
 	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, token)
-	request.Header.Set(middleware.AuthorizationHeaderKey, authorizationHeader)
+	request.Header.Set(AuthorizationHeaderKey, authorizationHeader)
 }
 
 func TestMiddlewareSuite(t *testing.T) {

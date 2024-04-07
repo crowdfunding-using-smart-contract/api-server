@@ -6,6 +6,8 @@ import (
 	"fund-o/api-server/cmd/worker"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/usecase"
+	"fund-o/api-server/pkg/apperrors"
+	"fund-o/api-server/pkg/password"
 	"fund-o/api-server/pkg/token"
 	"net/http"
 	"time"
@@ -50,7 +52,7 @@ func NewAuthHandler(options *AuthHandlerOptions) *AuthHandler {
 // @accept json
 // @produce json
 // @param User body entity.UserCreatePayload true "User data to be created"
-// @response 200 {object} handler.ResultResponse[entity.UserDto] "OK"
+// @response 200 {object} handler.ResultResponse[entity.UserAuthenticateResponse] "OK"
 // @response 400 {object} handler.ErrorResponse "Bad Request"
 // @response 500 {object} handler.ErrorResponse "Internal Server Error"
 // @router /auth/register [post]
@@ -61,9 +63,59 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	userDto, err := h.userUseCase.CreateUser(&user)
+	if user.Password != user.PasswordConfirmation {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, apperrors.ErrPasswordAndConfirmationNotMatch.Error()))
+		return
+	}
+
+	birthDate, err := time.Parse(time.RFC3339, user.BirthDate)
 	if err != nil {
-		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error register user: %v", err.Error())))
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, apperrors.ErrInvalidBirthDateFormat.Error()))
+		return
+	}
+
+	hashedPassword, err := password.HashPassword(user.Password)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, apperrors.ErrHashPassword.Error()))
+		return
+	}
+
+	userDto, err := h.userUseCase.CreateUser(&entity.User{
+		Email:          user.Email,
+		Firstname:      user.Firstname,
+		Lastname:       user.Lastname,
+		DisplayName:    fmt.Sprintf("%s %s", user.Firstname, user.Lastname),
+		HashedPassword: hashedPassword,
+		BirthDate:      birthDate,
+		Gender:         entity.ParseGender(user.Gender),
+	})
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
+		return
+	}
+
+	accessToken, accessTokenPayload, err := h.tokenMaker.CreateToken(userDto.ID, 15*time.Minute)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+		return
+	}
+
+	refreshToken, refreshTokenPayload, err := h.tokenMaker.CreateToken(userDto.ID, 24*time.Hour)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+		return
+	}
+
+	session, err := h.sessionUseCase.CreateSession(&entity.SessionCreatePayload{
+		ID:           refreshTokenPayload.ID,
+		UserID:       userDto.ID,
+		RefreshToken: refreshToken,
+		UserAgent:    c.Request.UserAgent(),
+		ClientIP:     c.ClientIP(),
+		ExpiredAt:    refreshTokenPayload.ExpiredAt,
+	})
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
 		return
 	}
 
@@ -79,7 +131,16 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	h.taskDistributor.DistributeTaskSendVerifyEmail(c, taskPayload, opts...)
 
-	c.JSON(makeHttpResponse(http.StatusCreated, userDto))
+	response := entity.UserAuthenticateResponse{
+		SessionID:             session.ID,
+		AccessToken:           accessToken,
+		AccessTokenExpiredAt:  accessTokenPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiredAt: refreshTokenPayload.ExpiredAt,
+		User:                  userDto,
+	}
+
+	c.JSON(makeHttpResponse(http.StatusCreated, response))
 }
 
 // Login godoc
@@ -90,7 +151,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @accept json
 // @produce json
 // @param User body entity.UserLoginPayload true "User data to be authenticated"
-// @response 200 {object} handler.ResultResponse[entity.UserLoginResponse] "OK"
+// @response 200 {object} handler.ResultResponse[entity.UserAuthenticateResponse] "OK"
 // @response 400 {object} handler.ErrorResponse "Bad Request"
 // @response 500 {object} handler.ErrorResponse "Internal Server Error"
 // @router /auth/login [post]
@@ -107,6 +168,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			c.JSON(makeHttpErrorResponse(http.StatusNotFound, fmt.Sprintf("error authenticate user: %v", err.Error())))
 			return
 		}
+
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
 		return
 	}
@@ -136,7 +198,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response := entity.UserLoginResponse{
+	response := entity.UserAuthenticateResponse{
 		SessionID:             session.ID,
 		AccessToken:           accessToken,
 		AccessTokenExpiredAt:  accessTokenPayload.ExpiredAt,

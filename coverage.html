@@ -1,0 +1,1423 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>handler: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">fund-o/api-server/internal/http/handler/auth.go (34.9%)</option>
+				
+				<option value="file1">fund-o/api-server/internal/http/handler/forum_handler.go (42.1%)</option>
+				
+				<option value="file2">fund-o/api-server/internal/http/handler/hello_handler.go (100.0%)</option>
+				
+				<option value="file3">fund-o/api-server/internal/http/handler/project_handler.go (0.0%)</option>
+				
+				<option value="file4">fund-o/api-server/internal/http/handler/response.go (100.0%)</option>
+				
+				<option value="file5">fund-o/api-server/internal/http/handler/transaction_handler.go (60.0%)</option>
+				
+				<option value="file6">fund-o/api-server/internal/http/handler/user.go (92.9%)</option>
+				
+				<option value="file7">fund-o/api-server/internal/http/middleware/authorization.go (100.0%)</option>
+				
+				<option value="file8">fund-o/api-server/internal/http/middleware/logger.go (0.0%)</option>
+				
+				<option value="file9">fund-o/api-server/pkg/mail/sender.go (100.0%)</option>
+				
+				<option value="file10">fund-o/api-server/pkg/mail/template.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package handler
+
+import (
+        "errors"
+        "fmt"
+        "fund-o/api-server/cmd/worker"
+        "fund-o/api-server/internal/entity"
+        "fund-o/api-server/internal/usecase"
+        "fund-o/api-server/pkg/apperrors"
+        "fund-o/api-server/pkg/password"
+        "fund-o/api-server/pkg/token"
+        "net/http"
+        "time"
+
+        "github.com/hibiken/asynq"
+
+        "github.com/gin-gonic/gin"
+        "gorm.io/gorm"
+)
+
+type AuthHandlerOptions struct {
+        usecase.UserUseCase
+        usecase.SessionUseCase
+        usecase.VerifyEmailUseCase
+        TokenMaker token.Maker
+        worker.TaskDistributor
+}
+
+type AuthHandler struct {
+        userUseCase        usecase.UserUseCase
+        sessionUseCase     usecase.SessionUseCase
+        verifyEmailUseCase usecase.VerifyEmailUseCase
+        tokenMaker         token.Maker
+        taskDistributor    worker.TaskDistributor
+}
+
+func NewAuthHandler(options *AuthHandlerOptions) *AuthHandler <span class="cov8" title="1">{
+        return &amp;AuthHandler{
+                userUseCase:        options.UserUseCase,
+                sessionUseCase:     options.SessionUseCase,
+                verifyEmailUseCase: options.VerifyEmailUseCase,
+                tokenMaker:         options.TokenMaker,
+                taskDistributor:    options.TaskDistributor,
+        }
+}</span>
+
+// Register godoc
+// @summary Register User
+// @description Create user with specific user data and role
+// @tags auth
+// @id Register
+// @accept json
+// @produce json
+// @param User body entity.UserCreatePayload true "User data to be created"
+// @response 200 {object} handler.ResultResponse[entity.UserAuthenticateResponse] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/register [post]
+func (h *AuthHandler) Register(c *gin.Context) <span class="cov8" title="1">{
+        var user entity.UserCreatePayload
+        if err := c.ShouldBindJSON(&amp;user); err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error register user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">if user.Password != user.PasswordConfirmation </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, apperrors.ErrPasswordAndConfirmationNotMatch.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">birthDate, err := time.Parse(time.RFC3339, user.BirthDate)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, apperrors.ErrInvalidBirthDateFormat.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">hashedPassword, err := password.HashPassword(user.Password)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, apperrors.ErrHashPassword.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">userDto, err := h.userUseCase.CreateUser(&amp;entity.User{
+                Email:          user.Email,
+                Firstname:      user.Firstname,
+                Lastname:       user.Lastname,
+                DisplayName:    fmt.Sprintf("%s %s", user.Firstname, user.Lastname),
+                HashedPassword: hashedPassword,
+                BirthDate:      birthDate,
+                Gender:         entity.ParseGender(user.Gender),
+        })
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">accessToken, accessTokenPayload, err := h.tokenMaker.CreateToken(userDto.ID, 15*time.Minute)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">refreshToken, refreshTokenPayload, err := h.tokenMaker.CreateToken(userDto.ID, 24*time.Hour)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">session, err := h.sessionUseCase.CreateSession(&amp;entity.SessionCreatePayload{
+                ID:           refreshTokenPayload.ID,
+                UserID:       userDto.ID,
+                RefreshToken: refreshToken,
+                UserAgent:    c.Request.UserAgent(),
+                ClientIP:     c.ClientIP(),
+                ExpiredAt:    refreshTokenPayload.ExpiredAt,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">taskPayload := &amp;worker.PayloadSendVerifyEmail{
+                Email: userDto.Email,
+        }
+
+        opts := []asynq.Option{
+                asynq.MaxRetry(10),
+                asynq.ProcessIn(10 * time.Second),
+                asynq.Queue(worker.QueueCritical),
+        }
+
+        h.taskDistributor.DistributeTaskSendVerifyEmail(c, taskPayload, opts...)
+
+        response := entity.UserAuthenticateResponse{
+                SessionID:             session.ID,
+                AccessToken:           accessToken,
+                AccessTokenExpiredAt:  accessTokenPayload.ExpiredAt,
+                RefreshToken:          refreshToken,
+                RefreshTokenExpiredAt: refreshTokenPayload.ExpiredAt,
+                User:                  userDto,
+        }
+
+        c.JSON(makeHttpResponse(http.StatusCreated, response))</span>
+}
+
+// Login godoc
+// @summary Authenticate User
+// @description Authenticate user with email and password
+// @tags auth
+// @id Login
+// @accept json
+// @produce json
+// @param User body entity.UserLoginPayload true "User data to be authenticated"
+// @response 200 {object} handler.ResultResponse[entity.UserAuthenticateResponse] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/login [post]
+func (h *AuthHandler) Login(c *gin.Context) <span class="cov8" title="1">{
+        var req entity.UserLoginPayload
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">user, err := h.userUseCase.AuthenticateUser(&amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, gorm.ErrRecordNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(makeHttpErrorResponse(http.StatusNotFound, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                        return
+                }</span>
+
+                <span class="cov0" title="0">c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return</span>
+        }
+
+        <span class="cov8" title="1">accessToken, accessTokenPayload, err := h.tokenMaker.CreateToken(user.ID, 15*time.Minute)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">refreshToken, refreshTokenPayload, err := h.tokenMaker.CreateToken(user.ID, 24*time.Hour)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">session, err := h.sessionUseCase.CreateSession(&amp;entity.SessionCreatePayload{
+                ID:           refreshTokenPayload.ID,
+                UserID:       user.ID,
+                RefreshToken: refreshToken,
+                UserAgent:    c.Request.UserAgent(),
+                ClientIP:     c.ClientIP(),
+                ExpiredAt:    refreshTokenPayload.ExpiredAt,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">response := entity.UserAuthenticateResponse{
+                SessionID:             session.ID,
+                AccessToken:           accessToken,
+                AccessTokenExpiredAt:  accessTokenPayload.ExpiredAt,
+                RefreshToken:          refreshToken,
+                RefreshTokenExpiredAt: refreshTokenPayload.ExpiredAt,
+                User:                  user,
+        }
+
+        c.JSON(makeHttpResponse(http.StatusOK, response))</span>
+}
+
+type RenewAccessTokenPayload struct {
+        RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type RenewAccessTokenResponse struct {
+        AccessToken          string    `json:"access_token"`
+        AccessTokenExpiredAt time.Time `json:"access_token_expired_at"`
+}
+
+// RenewAccessToken godoc
+// @summary Renew Access Token
+// @description Renew access token with refresh token
+// @tags auth
+// @id RenewAccessToken
+// @accept json
+// @produce json
+// @param User body handler.RenewAccessTokenPayload true "Refresh token to be renewed"
+// @response 200 {object} handler.ResultResponse[handler.RenewAccessTokenResponse] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/renew-token [post]
+func (h *AuthHandler) RenewAccessToken(c *gin.Context) <span class="cov0" title="0">{
+        var req RenewAccessTokenPayload
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">refreshTokenPayload, err := h.tokenMaker.VerifyToken(req.RefreshToken)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+        }</span>
+
+        <span class="cov0" title="0">session, err := h.sessionUseCase.GetSessionByID(refreshTokenPayload.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, gorm.ErrRecordNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(makeHttpErrorResponse(http.StatusNotFound, err.Error()))
+                        return
+                }</span>
+
+                <span class="cov0" title="0">c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return</span>
+        }
+
+        <span class="cov0" title="0">if session.IsBlocked </span><span class="cov0" title="0">{
+                err := fmt.Errorf("blocked session")
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">if session.UserID != refreshTokenPayload.UserID </span><span class="cov0" title="0">{
+                err := fmt.Errorf("mismatch session token")
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">if time.Now().After(session.ExpiredAt) </span><span class="cov0" title="0">{
+                err := fmt.Errorf("session expired")
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">accessToken, accessTokenPayload, err := h.tokenMaker.CreateToken(refreshTokenPayload.UserID, 15*time.Minute)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">response := RenewAccessTokenResponse{
+                AccessToken:          accessToken,
+                AccessTokenExpiredAt: accessTokenPayload.ExpiredAt,
+        }
+
+        c.JSON(makeHttpResponse(http.StatusOK, response))</span>
+}
+
+type SendVerifyEmailPayload struct {
+        Email string `json:"email" binding:"required"`
+}
+
+// SendVerifyEmail godoc
+// @summary Send Verify Email
+// @description Send verify email to user email
+// @tags auth
+// @id SendVerifyEmail
+// @accept json
+// @produce json
+// @param User body handler.SendVerifyEmailPayload true "User email to be verified"
+// @response 200 {object} handler.MessageResponse "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/send-verify-email [post]
+func (h *AuthHandler) SendVerifyEmail(c *gin.Context) <span class="cov0" title="0">{
+        var req SendVerifyEmailPayload
+
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">user, err := h.userUseCase.GetUserByEmail(req.Email)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">if user.IsEmailVerified </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, "email already verified"))
+                return
+        }</span>
+
+        <span class="cov0" title="0">taskPayload := &amp;worker.PayloadSendVerifyEmail{
+                Email: user.Email,
+        }
+
+        opts := []asynq.Option{
+                asynq.MaxRetry(10),
+                asynq.ProcessIn(3 * time.Second),
+                asynq.Queue(worker.QueueCritical),
+        }
+
+        h.taskDistributor.DistributeTaskSendVerifyEmail(c, taskPayload, opts...)
+
+        c.JSON(makeHttpMessageResponse(http.StatusOK, "verify email sent"))</span>
+}
+
+// VerifyEmail godoc
+// @summary Verify Email
+// @description Verify email with email id and secret code
+// @tags auth
+// @id VerifyEmail
+// @accept json
+// @produce json
+// @param email_id query string true "Email ID to be verified"
+// @param secret_code query string true "Secret Code to be verified"
+// @response 200 {object} handler.ResultResponse[entity.UserDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /auth/verify-email [get]
+func (h *AuthHandler) VerifyEmail(c *gin.Context) <span class="cov0" title="0">{
+        emailID := c.Query("email_id")
+        secretCode := c.Query("secret_code")
+
+        if emailID == "" || secretCode == "" </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, "invalid email id or secret code"))
+                return
+        }</span>
+
+        <span class="cov0" title="0">payload := entity.VerifyEmailUpdatePayload{
+                ID:         emailID,
+                SecretCode: secretCode,
+        }
+
+        verifyEmail, err := h.verifyEmailUseCase.VerifyEmail(&amp;payload)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">user, err := h.userUseCase.GetUserByEmail(verifyEmail.Email)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">updatedUser, err := h.userUseCase.UpdateUserByID(user.ID, &amp;entity.UserUpdatePayload{
+                IsEmailVerified: true,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        // TODO: navigate to frontend page instead
+        <span class="cov0" title="0">c.Redirect(http.StatusFound, "http://localhost:5173/profile")
+        c.JSON(makeHttpResponse(http.StatusOK, updatedUser))</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package handler
+
+import (
+        "fmt"
+        "fund-o/api-server/internal/entity"
+        "fund-o/api-server/internal/http/middleware"
+        "fund-o/api-server/internal/usecase"
+        "fund-o/api-server/pkg/pagination"
+        "fund-o/api-server/pkg/token"
+        "github.com/gin-gonic/gin"
+        "mime/multipart"
+        "net/http"
+)
+
+type ForumHandler struct {
+        forumUseCase usecase.ForumUseCase
+}
+
+type ForumHandlerOptions struct {
+        usecase.ForumUseCase
+}
+
+func NewForumHandler(options *ForumHandlerOptions) *ForumHandler <span class="cov8" title="1">{
+        return &amp;ForumHandler{
+                forumUseCase: options.ForumUseCase,
+        }
+}</span>
+
+// ListPosts godoc
+// @summary List Posts
+// @description List posts
+// @tags forums
+// @id ListPosts
+// @accept json
+// @produce json
+// @param page query int false "number of page"
+// @param size query int false "size of data per page"
+// @success 200 {object} handler.ResultResponse[pagination.PaginateResult[entity.PostDto]] "OK"
+// @failure 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /posts [get]
+func (h *ForumHandler) ListPosts(c *gin.Context) <span class="cov8" title="1">{
+        var paginateOptions pagination.PaginateOptions
+        if err := c.ShouldBindQuery(&amp;paginateOptions); err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error list forums: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">forums := h.forumUseCase.ListForums(paginateOptions)
+        c.JSON(makeHttpResponse(http.StatusOK, forums))</span>
+}
+
+// CreatePost godoc
+// @summary Create Post
+// @description Create post
+// @tags forums
+// @id CreatePost
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param payload body entity.PostCreatePayload true "post payload"
+// @success 201 {object} handler.ResultResponse[entity.PostDto]
+// @failure 400 {object} handler.ErrorResponse
+// @failure 500 {object} handler.ErrorResponse
+// @router /posts [post]
+func (h *ForumHandler) CreatePost(c *gin.Context) <span class="cov8" title="1">{
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+        var req entity.PostCreatePayload
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create forum: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">req.AuthorID = userID
+
+        forumDto, err := h.forumUseCase.CreatePost(&amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create forum: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(makeHttpResponse(http.StatusCreated, forumDto))</span>
+}
+
+// GetPostByID godoc
+// @summary Get Post by ID
+// @description Get post by id
+// @tags forums
+// @id GetPostByID
+// @accept json
+// @produce json
+// @param id path string true "post id to get"
+// @success 200 {object} handler.ResultResponse[entity.PostDto]
+// @failure 500 {object} handler.ErrorResponse
+// @router /posts/{id} [get]
+func (h *ForumHandler) GetPostByID(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        forumDto, err := h.forumUseCase.GetPostByID(id)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get forum by id: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(makeHttpResponse(http.StatusOK, forumDto))</span>
+}
+
+// CreateComment godoc
+// @summary Create Comment
+// @description Create comment for forum
+// @tags forums
+// @id CreateComment
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "forum id to comment"
+// @param payload body entity.CommentCreatePayload true "comment payload"
+// @success 201 {object} handler.ResultResponse[entity.CommentDto]
+// @failure 400 {object} handler.ErrorResponse
+// @failure 500 {object} handler.ErrorResponse
+// @router /posts/{id}/comments [post]
+func (h *ForumHandler) CreateComment(c *gin.Context) <span class="cov0" title="0">{
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+        forumID := c.Param("id")
+        var req entity.CommentCreatePayload
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create comment: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">req.AuthorID = userID
+
+        commentDto, err := h.forumUseCase.CreateCommentByForumID(forumID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create comment: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpResponse(http.StatusCreated, commentDto))</span>
+}
+
+// CreateReply godoc
+// @summary Create Reply
+// @description Create reply for comment
+// @tags forums
+// @id CreateReply
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "comment id to reply"
+// @param payload body entity.ReplyCreatePayload true "reply payload"
+// @success 201 {object} handler.ResultResponse[entity.ReplyDto]
+// @failure 400 {object} handler.ErrorResponse
+// @failure 500 {object} handler.ErrorResponse
+// @router /comments/{id}/replies [post]
+func (h *ForumHandler) CreateReply(c *gin.Context) <span class="cov0" title="0">{
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+        commentID := c.Param("id")
+        var req entity.ReplyCreatePayload
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create reply: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">req.AuthorID = userID
+
+        replyDto, err := h.forumUseCase.CreateReplyByCommentID(commentID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create reply: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpResponse(http.StatusCreated, replyDto))</span>
+}
+
+// UploadImage godoc
+// @summary Upload Post Image
+// @description Upload post image
+// @tags forums
+// @id UploadImage
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param image formData file true "post image file"
+// @failure 400 {object} handler.ErrorResponse
+// @failure 500 {object} handler.ErrorResponse
+// @router /posts/upload [post]
+func (h *ForumHandler) UploadImage(c *gin.Context) <span class="cov0" title="0">{
+        var req struct {
+                Image *multipart.FileHeader `form:"image" binding:"required"`
+        }
+
+        if err := c.ShouldBind(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error upload post image: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">imageUrl, uploadError := h.forumUseCase.UploadPostImage(req.Image)
+        if uploadError != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(uploadError.Status(), uploadError.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{
+                "success": 1,
+                "file": gin.H{
+                        "url": imageUrl,
+                },
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handler
+
+import (
+        "fmt"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+// GetHelloMessageHandler godoc
+// @summary Health Check
+// @description Health checking for the service
+// @tags healthcheck
+// @id GetHelloMessageHandler
+// @produce json
+// @param name query string false "name of the active user"
+// @response 200 {object} handler.MessageResponse "OK"
+// @router /hello [get]
+func GetHelloMessage(c *gin.Context) <span class="cov8" title="1">{
+        name := c.Query("name")
+
+        if name != "" </span><span class="cov8" title="1">{
+                c.JSON(makeHttpMessageResponse(http.StatusOK, fmt.Sprintf("Hello, %s!", name)))
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(makeHttpMessageResponse(http.StatusOK, "Hello, Guest!"))</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handler
+
+import (
+        "fmt"
+        "fund-o/api-server/internal/entity"
+        "fund-o/api-server/internal/http/middleware"
+        "fund-o/api-server/internal/usecase"
+        "fund-o/api-server/pkg/pagination"
+        "fund-o/api-server/pkg/token"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+type ProjectHandler struct {
+        projectUseCase         usecase.ProjectUseCase
+        projectCategoryUseCase usecase.ProjectCategoryUseCase
+        userUseCase            usecase.UserUseCase
+}
+
+type ProjectHandlerOptions struct {
+        usecase.ProjectUseCase
+        usecase.ProjectCategoryUseCase
+        usecase.UserUseCase
+}
+
+func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler <span class="cov0" title="0">{
+        return &amp;ProjectHandler{
+                projectUseCase:         options.ProjectUseCase,
+                projectCategoryUseCase: options.ProjectCategoryUseCase,
+                userUseCase:            options.UserUseCase,
+        }
+}</span>
+
+// ListProjects godoc
+// @summary List Projects
+// @description List projects
+// @tags projects
+// @id ListProjects
+// @accept json
+// @produce json
+// @param page query int false "number of page"
+// @param size query int false "size of data per page"
+// @response 200 {object} handler.ResultResponse[pagination.PaginateResult[entity.ProjectDto]] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects [get]
+func (h *ProjectHandler) ListProjects(c *gin.Context) <span class="cov0" title="0">{
+        var paginateOptions pagination.PaginateOptions
+        if err := c.ShouldBindQuery(&amp;paginateOptions); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error list forums: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">projects := h.projectUseCase.ListProjects(paginateOptions)
+        c.JSON(makeHttpResponse(http.StatusOK, projects))</span>
+}
+
+// CreateProject godoc
+// @summary Create Project
+// @description Create project with required data
+// @tags projects
+// @id CreateProject
+// @accept mpfd
+// @produce json
+// @security ApiKeyAuth
+// @param Project body entity.ProjectCreatePayload true "Project data to be created"
+// @response 200 {object} handler.ResultResponse[entity.ProjectDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects [post]
+func (h *ProjectHandler) CreateProject(c *gin.Context) <span class="cov0" title="0">{
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+        var req entity.ProjectCreatePayload
+        if err := c.ShouldBind(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">user, err := h.userUseCase.GetUserById(userID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">req.OwnerID = user.ID
+
+        projectDto, err := h.projectUseCase.CreateProject(&amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">projectDto.Owner = user
+
+        c.JSON(makeHttpResponse(http.StatusCreated, projectDto))</span>
+}
+
+// GetProjectByID godoc
+// @summary Get Project by ID
+// @description Get project by ID
+// @tags projects
+// @id GetProjectByID
+// @accept json
+// @produce json
+// @param id path string true "Project ID"
+// @response 200 {object} handler.ResultResponse[entity.ProjectDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/{id} [get]
+func (h *ProjectHandler) GetProjectByID(c *gin.Context) <span class="cov0" title="0">{
+        projectID := c.Param("id")
+
+        projectDto, err := h.projectUseCase.GetProjectByID(projectID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(err.Status(), err.Error()))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpResponse(http.StatusOK, projectDto))</span>
+}
+
+// GetOwnProjects godoc
+// @summary Get own Projects
+// @description Get own projects with authenticate creator
+// @tags projects
+// @id GetOwnProjects
+// @accpet json
+// @produce json
+// @security ApiKeyAuth
+// @response 200 {object} handler.ResultResponse[[]entity.ProjectDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/me [get]
+func (h *ProjectHandler) GetOwnProjects(c *gin.Context) <span class="cov0" title="0">{
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+        projectDtos, err := h.projectUseCase.GetProjectsByOwnerID(userID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpResponse(http.StatusOK, projectDtos))</span>
+}
+
+// ListProjectCategories godoc
+// @summary List Project Categories
+// @description List project categories for selection
+// @tags projects
+// @id ListProjectCategories
+// @produce json
+// @response 200 {object} handler.ResultResponse[[]entity.ProjectCategoryDto]
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/categories [get]
+func (h *ProjectHandler) ListProjectCategories(c *gin.Context) <span class="cov0" title="0">{
+        categories, err := h.projectCategoryUseCase.ListProjectCategories()
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error list project categories: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpResponse(http.StatusOK, categories))</span>
+}
+
+// CreateProjectRating godoc
+// @summary Create Project Rating
+// @description Create project rating with required data
+// @tags projects
+// @id CreateProjectRating
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "Project ID"
+// @param ProjectRating body entity.ProjectRatingCreatePayload true "Project rating data to be created"
+// @response 201 {object} handler.ResultResponse[entity.ProjectDto] "Created"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/{id}/ratings [post]
+func (h *ProjectHandler) CreateProjectRating(c *gin.Context) <span class="cov0" title="0">{
+        projectID := c.Param("id")
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+        var req entity.ProjectRatingCreatePayload
+        req.ProjectID = projectID
+        req.UserID = userID
+
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project rating: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">err := h.projectUseCase.CreateProjectRating(&amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project rating: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpMessageResponse(http.StatusCreated, "user rated project successfully"))</span>
+}
+
+// VerifyProjectRating godoc
+// @summary Verify Project Rating
+// @description Verify project rating by user
+// @tags projects
+// @id VerifyProjectRating
+// @accept json
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "Project ID"
+// @response 200 {object} handler.ResultResponse[bool] "OK"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /projects/{id}/ratings/verify [get]
+func (h *ProjectHandler) VerifyProjectRating(c *gin.Context) <span class="cov0" title="0">{
+        projectID := c.Param("id")
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+        rated, err := h.projectUseCase.IsRatedProject(userID, projectID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error verify project rating: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(makeHttpResponse(http.StatusOK, rated))</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package handler
+
+import "net/http"
+
+type ResultResponse[T any] struct {
+        Status     string `json:"status"`
+        StatusCode int    `json:"status_code"`
+        Result     T      `json:"result"`
+} // @name ResultResponse
+
+type MessageResponse struct {
+        Status     string `json:"status"`
+        StatusCode int    `json:"status_code"`
+        Message    string `json:"message"`
+} // @name MessageResponse
+
+type ErrorResponse struct {
+        Status     string `json:"status"`
+        StatusCode int    `json:"status_code"`
+        Error      string `json:"error"`
+} // @name ErrorResponse
+
+func makeHttpResponse[T any](code int, result T) (int, ResultResponse[T]) <span class="cov8" title="1">{
+        response := ResultResponse[T]{
+                Status:     http.StatusText(code),
+                StatusCode: code,
+                Result:     result,
+        }
+
+        return code, response
+}</span>
+
+func makeHttpMessageResponse(code int, message string) (int, MessageResponse) <span class="cov8" title="1">{
+        response := MessageResponse{
+                Status:     http.StatusText(code),
+                StatusCode: code,
+                Message:    message,
+        }
+
+        return code, response
+}</span>
+
+func makeHttpErrorResponse(code int, err string) (int, ErrorResponse) <span class="cov8" title="1">{
+        response := ErrorResponse{
+                Status:     http.StatusText(code),
+                StatusCode: code,
+                Error:      err,
+        }
+
+        return code, response
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package handler
+
+import (
+        "fmt"
+        "net/http"
+
+        "fund-o/api-server/internal/entity"
+        "fund-o/api-server/internal/usecase"
+        "fund-o/api-server/pkg/pagination"
+
+        "github.com/gin-gonic/gin"
+        "gorm.io/gorm"
+)
+
+type TransactionHandlerOptions struct {
+        TransactionUseCase usecase.TransactionUseCase
+}
+
+type TransactionHandler struct {
+        transactionUseCase usecase.TransactionUseCase
+}
+
+func NewTransactionHandler(options *TransactionHandlerOptions) *TransactionHandler <span class="cov8" title="1">{
+        return &amp;TransactionHandler{
+                transactionUseCase: options.TransactionUseCase,
+        }
+}</span>
+
+// CreateTransaction godoc
+// @summary Create Transaction
+// @description Create transaction with reference code
+// @tags transasctions
+// @id CreateTransaction
+// @accpet json
+// @produce json
+// @param Transaction body entity.TransactionCreatePayload true "Transaction data to be created"
+// @response 200 {object} handler.ResultResponse[entity.TransactionDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /transactions [post]
+func (handler *TransactionHandler) CreateTransaction(c *gin.Context) <span class="cov8" title="1">{
+        var transaction entity.TransactionCreatePayload
+        if err := c.ShouldBindJSON(&amp;transaction); err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create transaction: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">transactionDto, err := handler.transactionUseCase.CreateTransaction(&amp;transaction)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create transaction: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(makeHttpResponse(http.StatusCreated, transactionDto))</span>
+}
+
+// GetTransaction godoc
+// @summary Get Transaction
+// @description Get transaction by id
+// @tags transasctions
+// @id GetTransaction
+// @produce json
+// @param id path string true "reference code of transaction"
+// @response 200 {object} handler.ResultResponse[entity.TransactionDto] "OK"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /transactions/{id} [get]
+func (handler *TransactionHandler) GetTransaction(c *gin.Context) <span class="cov8" title="1">{
+        transactionRefCode := c.Param("id")
+
+        transactionDto, err := handler.transactionUseCase.GetTransactionByRefCode(transactionRefCode)
+        if err != nil </span><span class="cov8" title="1">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov8" title="1">{
+                        c.JSON(makeHttpErrorResponse(http.StatusNotFound, fmt.Sprintf("error get transaction: %v", err.Error())))
+                        return
+                }</span>
+
+                <span class="cov0" title="0">c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get transaction: %v", err.Error())))
+                return</span>
+        }
+
+        <span class="cov8" title="1">c.JSON(makeHttpResponse(http.StatusOK, transactionDto))</span>
+}
+
+// ListTransactions godoc
+// @summary List Transaction
+// @description Get list of transactions
+// @tags transasctions
+// @id ListTransactions
+// @produce json
+// @param page query int false "number of page"
+// @param size query int false "size of data per page"
+// @response 200 {object} handler.ResultResponse[pagination.PaginateResult[entity.TransactionDto]] "OK"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /transactions [get]
+func (handler *TransactionHandler) ListTransactions(c *gin.Context) <span class="cov0" title="0">{
+        var paginateOptions pagination.PaginateOptions
+        if err := c.ShouldBindQuery(&amp;paginateOptions); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get transaction: %v", err.Error())))
+                return
+        }</span>
+
+        <span class="cov0" title="0">transactions := handler.transactionUseCase.ListTransactions(paginateOptions)
+        c.JSON(makeHttpResponse(http.StatusOK, transactions))</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package handler
+
+import (
+        "errors"
+        "fund-o/api-server/internal/entity"
+        _ "fund-o/api-server/internal/entity"
+        "fund-o/api-server/internal/http/middleware"
+        "fund-o/api-server/internal/usecase"
+        "fund-o/api-server/pkg/apperrors"
+        "fund-o/api-server/pkg/token"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+type UserHandlerOptions struct {
+        usecase.UserUseCase
+}
+
+type UserHandler struct {
+        userUseCase usecase.UserUseCase
+}
+
+func NewUserHandler(options *UserHandlerOptions) *UserHandler <span class="cov8" title="1">{
+        return &amp;UserHandler{
+                userUseCase: options.UserUseCase,
+        }
+}</span>
+
+// GetMe godoc
+// @summary Get current user
+// @description Get current user by validating authorization token
+// @tags users
+// @id GetMe
+// @produce json
+// @security ApiKeyAuth
+// @response 200 {object} handler.ResultResponse[entity.UserDto] "OK"
+// @response 401 {object} handler.ErrorResponse "Unauthorized"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /users/me [get]
+func (h *UserHandler) GetMe(c *gin.Context) <span class="cov8" title="1">{
+        payload := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+        user, err := h.userUseCase.GetUserById(payload.UserID)
+        if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, apperrors.ErrInvalidUserID) </span><span class="cov8" title="1">{
+                        c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                        return
+                }</span>
+
+                <span class="cov8" title="1">if errors.Is(err, apperrors.ErrUserNotFound) </span><span class="cov8" title="1">{
+                        c.JSON(makeHttpErrorResponse(http.StatusNotFound, err.Error()))
+                        return
+                }</span>
+
+                <span class="cov8" title="1">c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
+                return</span>
+        }
+
+        <span class="cov8" title="1">c.JSON(makeHttpResponse(http.StatusOK, user))</span>
+}
+
+// UpdateUser godoc
+// @summary Update user
+// @description Update user by id
+// @tags users
+// @id UpdateUser
+// @accept multipart/form-data
+// @produce json
+// @security ApiKeyAuth
+// @param id path string true "User ID"
+// @param image formData file true "User profile image"
+// @response 200 {object} handler.ResultResponse[entity.UserDto] "OK"
+// @response 400 {object} handler.ErrorResponse "Bad Request"
+// @response 401 {object} handler.ErrorResponse "Unauthorized"
+// @response 500 {object} handler.ErrorResponse "Internal Server Error"
+// @router /users/{id} [patch]
+func (h *UserHandler) UpdateUser(c *gin.Context) <span class="cov8" title="1">{
+        id := c.Param("id")
+        userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+        if id != userID </span><span class="cov8" title="1">{
+                err := errors.New("unauthorized: user can only update their own profile")
+                c.JSON(makeHttpErrorResponse(http.StatusUnauthorized, err.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">var payload entity.UserUpdatePayload
+        if err := c.ShouldBind(&amp;payload); err != nil </span><span class="cov0" title="0">{
+                c.JSON(makeHttpErrorResponse(http.StatusBadRequest, err.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">user, err := h.userUseCase.UpdateUserByID(id, &amp;payload)
+        if err != nil </span><span class="cov8" title="1">{
+                c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, err.Error()))
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(makeHttpResponse(http.StatusOK, user))</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package middleware
+
+import (
+        "errors"
+        "fmt"
+        "fund-o/api-server/pkg/token"
+        "net/http"
+        "strings"
+
+        "github.com/gin-gonic/gin"
+)
+
+const (
+        AuthorizationHeaderKey  = "authorization"
+        AuthorizationTypeBearer = "bearer"
+        AuthorizationPayloadKey = "authorization_payload"
+)
+
+func AuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc <span class="cov8" title="1">{
+        return func(c *gin.Context) </span><span class="cov8" title="1">{
+                authorizationHeader := c.GetHeader(AuthorizationHeaderKey)
+                if len(authorizationHeader) == 0 </span><span class="cov8" title="1">{
+                        err := errors.New("authorization header is not provided")
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+                        return
+                }</span>
+
+                <span class="cov8" title="1">fields := strings.Fields(authorizationHeader)
+                if len(fields) &lt; 2 </span><span class="cov8" title="1">{
+                        err := errors.New("invalid authorization header format")
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+                        return
+                }</span>
+
+                <span class="cov8" title="1">authorizationType := strings.ToLower(fields[0])
+                if authorizationType != AuthorizationTypeBearer </span><span class="cov8" title="1">{
+                        err := fmt.Errorf("unsupported authorization type %s", authorizationType)
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+                        return
+                }</span>
+
+                <span class="cov8" title="1">accessToken := fields[1]
+                payload, err := tokenMaker.VerifyToken(accessToken)
+                if err != nil </span><span class="cov8" title="1">{
+                        c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+                        return
+                }</span>
+
+                <span class="cov8" title="1">c.Set(AuthorizationPayloadKey, payload)
+                c.Next()</span>
+        }
+}
+
+func errorResponse(err error) gin.H <span class="cov8" title="1">{
+        return gin.H{
+                "status":      http.StatusText(http.StatusUnauthorized),
+                "status_code": http.StatusUnauthorized,
+                "error":       err.Error(),
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package middleware
+
+import (
+        "strings"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/rs/zerolog/log"
+)
+
+func RequestLogger() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                ip := c.ClientIP()
+                remoteArress := strings.Split(c.Request.RemoteAddr, ":")
+
+                log.Info().
+                        Str("method", c.Request.Method).
+                        Str("url", c.Request.URL.Path).
+                        Str("hostname", c.Request.Host).
+                        Str("ip", ip).
+                        Str("remote_address", remoteArress[0]).
+                        Str("remote_port", remoteArress[1]).
+                        Msg("incoming request")
+                c.Next()
+        }</span>
+}
+
+func ResponseLogger() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                now := time.Now()
+
+                c.Next()
+
+                log.Info().
+                        Int("status_code", c.Writer.Status()).
+                        Dur("response_time", time.Since(now)).
+                        Msg("request completed")
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package mail
+
+import (
+        "fmt"
+        "net/smtp"
+
+        "github.com/jordan-wright/email"
+)
+
+const (
+        smtpAuthAddress   = "smtp.gmail.com"
+        smtpServerAddress = "smtp.gmail.com:587"
+)
+
+type EmailSender interface {
+        SendEmail(subject, content string, to, cc, bcc []string) error
+}
+
+type GmailSender struct {
+        name              string
+        fromEmailAddress  string
+        fromEmailPassword string
+}
+
+type GmailSenderOptions struct {
+        Name              string
+        FromEmailAddress  string
+        FromEmailPassword string
+}
+
+func NewGmailSender(options *GmailSenderOptions) EmailSender <span class="cov8" title="1">{
+        return &amp;GmailSender{
+                name:              options.Name,
+                fromEmailAddress:  options.FromEmailAddress,
+                fromEmailPassword: options.FromEmailPassword,
+        }
+}</span>
+
+func (sender *GmailSender) SendEmail(subject, content string, to, cc, bcc []string) error <span class="cov8" title="1">{
+        e := email.NewEmail()
+        e.From = fmt.Sprintf("%s &lt;%s&gt;", sender.name, sender.fromEmailAddress)
+        e.Subject = subject
+        e.HTML = []byte(content)
+        e.To = to
+        e.Cc = cc
+        e.Bcc = bcc
+
+        smtpAuth := smtp.PlainAuth("", sender.fromEmailAddress, sender.fromEmailPassword, smtpAuthAddress)
+        return e.Send(smtpServerAddress, smtpAuth)
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package mail
+
+func NewVerifyEmailTemplate(verifyUrl string) string <span class="cov8" title="1">{
+        content := `
+        &lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;&lt;html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta content="width=device-width, initial-scale=1" name="viewport"&gt;&lt;meta name="x-apple-disable-message-reformatting"&gt;&lt;meta http-equiv="X-UA-Compatible" content="IE=edge"&gt;&lt;meta content="telephone=no" name="format-detection"&gt;&lt;title&gt;New Template&lt;/title&gt; &lt;!--[if (mso 16)]&gt;&lt;style type="text/css"&gt;     a {text-decoration: none;}     &lt;/style&gt;&lt;![endif]--&gt; &lt;!--[if gte mso 9]&gt;&lt;style&gt;sup { font-size: 100% !important; }&lt;/style&gt;&lt;![endif]--&gt; &lt;!--[if gte mso 9]&gt;&lt;xml&gt; &lt;o:OfficeDocumentSettings&gt; &lt;o:AllowPNG&gt;&lt;/o:AllowPNG&gt; &lt;o:PixelsPerInch&gt;96&lt;/o:PixelsPerInch&gt; &lt;/o:OfficeDocumentSettings&gt; &lt;/xml&gt;
+        &lt;![endif]--&gt;&lt;style type="text/css"&gt;#outlook a { padding:0;}.es-button { mso-style-priority:100!important; text-decoration:none!important;}a[x-apple-data-detectors] { color:inherit!important; text-decoration:none!important; font-size:inherit!important; font-family:inherit!important; font-weight:inherit!important; line-height:inherit!important;}.es-desk-hidden { display:none; float:left; overflow:hidden; width:0; max-height:0; line-height:0; mso-hide:all;}@media only screen and (max-width:600px) {p, ul li, ol li, a { line-height:150%!important } h1, h2, h3, h1 a, h2 a, h3 a { line-height:120%!important } h1 { font-size:36px!important; text-align:left } h2 { font-size:26px!important; text-align:left } h3 { font-size:20px!important; text-align:left } .es-header-body h1 a, .es-content-body h1 a, .es-footer-body h1 a { font-size:36px!important; text-align:left }
+         .es-header-body h2 a, .es-content-body h2 a, .es-footer-body h2 a { font-size:26px!important; text-align:left } .es-header-body h3 a, .es-content-body h3 a, .es-footer-body h3 a { font-size:20px!important; text-align:left } .es-menu td a { font-size:12px!important } .es-header-body p, .es-header-body ul li, .es-header-body ol li, .es-header-body a { font-size:14px!important } .es-content-body p, .es-content-body ul li, .es-content-body ol li, .es-content-body a { font-size:14px!important } .es-footer-body p, .es-footer-body ul li, .es-footer-body ol li, .es-footer-body a { font-size:14px!important } .es-infoblock p, .es-infoblock ul li, .es-infoblock ol li, .es-infoblock a { font-size:12px!important } *[class="gmail-fix"] { display:none!important } .es-m-txt-c, .es-m-txt-c h1, .es-m-txt-c h2, .es-m-txt-c h3 { text-align:center!important } .es-m-txt-r, .es-m-txt-r h1, .es-m-txt-r h2, .es-m-txt-r h3 { text-align:right!important }
+         .es-m-txt-l, .es-m-txt-l h1, .es-m-txt-l h2, .es-m-txt-l h3 { text-align:left!important } .es-m-txt-r img, .es-m-txt-c img, .es-m-txt-l img { display:inline!important } .es-button-border { display:inline-block!important } a.es-button, button.es-button { font-size:20px!important; display:inline-block!important } .es-adaptive table, .es-left, .es-right { width:100%!important } .es-content table, .es-header table, .es-footer table, .es-content, .es-footer, .es-header { width:100%!important; max-width:600px!important } .es-adapt-td { display:block!important; width:100%!important } .adapt-img { width:100%!important; height:auto!important } .es-m-p0 { padding:0!important } .es-m-p0r { padding-right:0!important } .es-m-p0l { padding-left:0!important } .es-m-p0t { padding-top:0!important } .es-m-p0b { padding-bottom:0!important } .es-m-p20b { padding-bottom:20px!important } .es-mobile-hidden, .es-hidden { display:none!important }
+         tr.es-desk-hidden, td.es-desk-hidden, table.es-desk-hidden { width:auto!important; overflow:visible!important; float:none!important; max-height:inherit!important; line-height:inherit!important } tr.es-desk-hidden { display:table-row!important } table.es-desk-hidden { display:table!important } td.es-desk-menu-hidden { display:table-cell!important } .es-menu td { width:1%!important } table.es-table-not-adapt, .esd-block-html table { width:auto!important } table.es-social { display:inline-block!important } table.es-social td { display:inline-block!important } .es-m-p5 { padding:5px!important } .es-m-p5t { padding-top:5px!important } .es-m-p5b { padding-bottom:5px!important } .es-m-p5r { padding-right:5px!important } .es-m-p5l { padding-left:5px!important } .es-m-p10 { padding:10px!important } .es-m-p10t { padding-top:10px!important } .es-m-p10b { padding-bottom:10px!important } .es-m-p10r { padding-right:10px!important }
+         .es-m-p10l { padding-left:10px!important } .es-m-p15 { padding:15px!important } .es-m-p15t { padding-top:15px!important } .es-m-p15b { padding-bottom:15px!important } .es-m-p15r { padding-right:15px!important } .es-m-p15l { padding-left:15px!important } .es-m-p20 { padding:20px!important } .es-m-p20t { padding-top:20px!important } .es-m-p20r { padding-right:20px!important } .es-m-p20l { padding-left:20px!important } .es-m-p25 { padding:25px!important } .es-m-p25t { padding-top:25px!important } .es-m-p25b { padding-bottom:25px!important } .es-m-p25r { padding-right:25px!important } .es-m-p25l { padding-left:25px!important } .es-m-p30 { padding:30px!important } .es-m-p30t { padding-top:30px!important } .es-m-p30b { padding-bottom:30px!important } .es-m-p30r { padding-right:30px!important } .es-m-p30l { padding-left:30px!important } .es-m-p35 { padding:35px!important } .es-m-p35t { padding-top:35px!important }
+         .es-m-p35b { padding-bottom:35px!important } .es-m-p35r { padding-right:35px!important } .es-m-p35l { padding-left:35px!important } .es-m-p40 { padding:40px!important } .es-m-p40t { padding-top:40px!important } .es-m-p40b { padding-bottom:40px!important } .es-m-p40r { padding-right:40px!important } .es-m-p40l { padding-left:40px!important } .es-desk-hidden { display:table-row!important; width:auto!important; overflow:visible!important; max-height:inherit!important } .h-auto { height:auto!important } }@media screen and (max-width:384px) {.mail-message-content { width:414px!important } }&lt;/style&gt;
+         &lt;/head&gt; &lt;body style="width:100%;font-family:arial, 'helvetica neue', helvetica, sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;padding:0;Margin:0"&gt;&lt;div dir="ltr" class="es-wrapper-color" lang="en" style="background-color:#F9F7F7"&gt; &lt;!--[if gte mso 9]&gt;&lt;v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="t"&gt; &lt;v:fill type="tile" color="#f9f7f7" origin="0.5, 0" position="0.5, 0"&gt;&lt;/v:fill&gt; &lt;/v:background&gt;&lt;![endif]--&gt;&lt;table class="es-wrapper" width="100%" cellspacing="0" cellpadding="0" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;padding:0;Margin:0;width:100%;height:100%;background-repeat:repeat;background-position:center top;background-color:#F9F7F7"&gt;&lt;tr&gt;
+        &lt;td valign="top" style="padding:0;Margin:0"&gt;&lt;table cellpadding="0" cellspacing="0" class="es-header" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%;background-color:transparent;background-repeat:repeat;background-position:center top"&gt;&lt;tr&gt;&lt;td align="center" style="padding:0;Margin:0"&gt;&lt;table bgcolor="#ffffff" class="es-header-body" align="center" cellpadding="0" cellspacing="0" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:600px"&gt;&lt;tr&gt;
+        &lt;td align="left" bgcolor="#ffffff" style="Margin:0;padding-top:10px;padding-bottom:10px;padding-left:20px;padding-right:20px;background-color:#ffffff"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;&lt;td class="es-m-p0r" valign="top" align="center" style="padding:0;Margin:0;width:560px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;&lt;td align="left" style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px;font-size:0px"&gt;&lt;img class="adapt-img" src="https://fejjswz.stripocdn.email/content/guids/CABINET_e2c5475cd85e4b8bc41c311189144f85195a784a1c00e3e43ef4432a56eb6a07/images/fundo.png" alt style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic" width="150"&gt;&lt;/td&gt;
+         &lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt; &lt;table cellpadding="0" cellspacing="0" class="es-content" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%"&gt;&lt;tr&gt;&lt;td align="center" style="padding:0;Margin:0"&gt;&lt;table bgcolor="#ffffff" class="es-content-body" align="center" cellpadding="0" cellspacing="0" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:#FFFFFF;width:600px"&gt;&lt;tr&gt;&lt;td align="left" style="padding:0;Margin:0;padding-top:15px;padding-left:20px;padding-right:20px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;
+        &lt;td align="center" valign="top" style="padding:0;Margin:0;width:560px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;&lt;td align="center" style="padding:15px;Margin:0;font-size:0px"&gt;&lt;img class="adapt-img" src="https://www.agentlocator.ca/Themes/Responsive/images/listings-banner.jpg" alt style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic" height="263"&gt;&lt;/td&gt; &lt;/tr&gt;&lt;tr&gt;&lt;td align="left" style="padding:0;Margin:0"&gt;&lt;p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', 'lucida sans', tahoma, sans-serif;line-height:18px;color:#333333;font-size:12px"&gt;&lt;strong&gt;YOU'RE ONE STEP AWAY&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;
+        &lt;td align="center" class="es-m-txt-c" style="padding:0;Margin:0;padding-top:5px;padding-bottom:5px"&gt;&lt;h1 style="Margin:0;line-height:38px;mso-line-height-rule:exactly;font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', 'lucida sans', tahoma, sans-serif;font-size:32px;font-style:normal;font-weight:bold;color:#333333;text-align:left"&gt;Verify your email address&lt;/h1&gt;&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;&lt;td align="left" style="padding:0;Margin:0"&gt;&lt;p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', 'lucida sans', tahoma, sans-serif;line-height:21px;color:#333333;font-size:14px"&gt;To complete your profile and start taking creativity projects with FundO, you'll need to verify your email address.&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;
+        &lt;td align="left" style="padding:0;Margin:0;padding-top:20px;padding-left:20px;padding-right:20px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;&lt;td align="center" valign="top" style="padding:0;Margin:0;width:560px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;
+        &lt;td align="center" style="padding:0;Margin:0;padding-top:20px;padding-bottom:20px"&gt;&lt;span class="es-button-border" style="border-style:solid;border-color:#2cb543;background:#5340ff;border-width:0px;display:inline-block;border-radius:28px;width:auto"&gt;&lt;a href="` + verifyUrl + `" class="es-button es-button-1710174798011" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#FFFFFF;font-size:14px;padding:15px 60px;display:inline-block;background:#5340ff;border-radius:28px;font-family:verdana, geneva, sans-serif;font-weight:bold;font-style:normal;line-height:17px;width:auto;text-align:center;mso-padding-alt:0;mso-border-alt:10px solid #5340ff"&gt;Verify&lt;/a&gt; &lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt; &lt;tr&gt;
+        &lt;td align="left" style="padding:0;Margin:0;padding-bottom:10px;padding-left:20px;padding-right:20px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;&lt;td align="center" valign="top" style="padding:0;Margin:0;width:560px"&gt;&lt;table cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:separate;border-spacing:0px;border-radius:5px" role="presentation"&gt;&lt;tr&gt;&lt;td align="center" style="padding:0;Margin:0;padding-top:20px;padding-bottom:20px;font-size:0"&gt;&lt;table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"&gt;&lt;tr&gt;&lt;td style="padding:0;Margin:0;border-bottom:1px solid #cccccc;background:unset;height:1px;width:100%;margin:0px"&gt;&lt;/td&gt; &lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;
+        &lt;/tr&gt;&lt;tr&gt;&lt;td align="left" style="padding:0;Margin:0"&gt;&lt;p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', 'lucida sans', tahoma, sans-serif;line-height:18px;color:#808080;font-size:12px"&gt;Contact&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align="left" style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px"&gt;&lt;p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', 'lucida sans', tahoma, sans-serif;line-height:18px;color:#a9a9a9;font-size:12px"&gt;Kasetsart University Bangkok, Thailand&lt;/p&gt;
+         &lt;p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', 'lucida sans', tahoma, sans-serif;line-height:18px;color:#a9a9a9;font-size:12px"&gt;© 2024 FundO, Inc.&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;
+`
+        return content
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
