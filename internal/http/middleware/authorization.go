@@ -18,6 +18,13 @@ const (
 
 func AuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		payload, err := parseQueryToken(c, tokenMaker)
+		if err == nil {
+			c.Set(AuthorizationPayloadKey, payload)
+			c.Next()
+			return
+		}
+
 		authorizationHeader := c.GetHeader(AuthorizationHeaderKey)
 		if len(authorizationHeader) == 0 {
 			err := errors.New("authorization header is not provided")
@@ -40,7 +47,7 @@ func AuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		}
 
 		accessToken := fields[1]
-		payload, err := tokenMaker.VerifyToken(accessToken)
+		payload, err = tokenMaker.VerifyToken(accessToken)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
@@ -49,6 +56,16 @@ func AuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		c.Set(AuthorizationPayloadKey, payload)
 		c.Next()
 	}
+}
+
+func parseQueryToken(c *gin.Context, tokenMaker token.Maker) (*token.Payload, error) {
+	accessToken := c.Query("token")
+	if len(accessToken) == 0 {
+		return nil, errors.New("access token is not provided")
+	}
+
+	payload, err := tokenMaker.VerifyToken(accessToken)
+	return payload, err
 }
 
 func errorResponse(err error) gin.H {

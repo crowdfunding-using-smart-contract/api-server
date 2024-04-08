@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"fund-o/api-server/cmd/worker"
+	"fund-o/api-server/cmd/ws"
 	"fund-o/api-server/config"
 	"fund-o/api-server/pkg/mail"
 	"fund-o/api-server/pkg/uploader"
+	"github.com/redis/go-redis/v9"
 	"net/http"
 	"os"
 	"os/signal"
@@ -124,6 +126,8 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	projectCategoryRepository := repository.NewProjectCategoryRepository(datasource.GetSqlDB())
 	verifyEmailRepository := repository.NewVerifyEmailRepository(datasource.GetSqlDB())
 	forumRepository := repository.NewForumRepository(datasource.GetSqlDB())
+	channelRepository := repository.NewChannelRepository(datasource.GetSqlDB())
+	messageRepository := repository.NewMessageRepository(datasource.GetSqlDB())
 
 	// UseCases
 	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
@@ -150,6 +154,13 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 		ForumRepository: forumRepository,
 		ImageUploader:   imageUploader,
 	})
+	channelUsecase := usecase.NewChannelUsecase(&usecase.ChannelUsecaseOptions{
+		ChannelRepository: channelRepository,
+	})
+	messageUseCase := usecase.NewMessageUsecase(&usecase.MessageUsecaseOptions{
+		MessageRepository: messageRepository,
+		ImageUploader:     imageUploader,
+	})
 
 	// Task Processor
 	redisOptions := asynq.RedisClientOpt{
@@ -164,6 +175,17 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	go runTaskProcessor(redisOptions, gmailOptions, &worker.TaskProcessorUseCaseOptions{
 		UserUseCase:        userUseCase,
 		VerifyEmailUseCase: verifyEmailUseCase,
+	})
+
+	// Websocket
+	hub := ws.NewWebsocketHub(&ws.Config{
+		Redis: redis.NewClient(&redis.Options{
+			Addr: config.RedisAddress,
+		}),
+	})
+	go hub.Run()
+	socketService := ws.NewSocketService(&ws.SocketServiceConfig{
+		Hub: hub,
 	})
 
 	// Handlers
@@ -188,6 +210,13 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	forumHandler := handler.NewForumHandler(&handler.ForumHandlerOptions{
 		ForumUseCase: forumUseCase,
 	})
+	chatHandler := handler.NewChatHandler(&handler.ChatHandlerOptions{
+		ChannelUsecase: channelUsecase,
+		MessageUsecase: messageUseCase,
+		SocketService:  socketService,
+	})
+
+	authMiddleware := middleware.AuthMiddleware(jwtMaker)
 
 	router := gin.New()
 
@@ -201,12 +230,14 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	router.Use(middleware.RequestLogger())
 	router.Use(middleware.ResponseLogger())
 
+	router.GET("/ws", authMiddleware, func(c *gin.Context) {
+		ws.ServeWs(hub, c)
+	})
+
 	routeV1 := router.Group(config.PathPrefix)
 
 	docs.SwaggerInfo.BasePath = config.PathPrefix
 	initSwaggerDocs(routeV1)
-
-	authMiddleware := middleware.AuthMiddleware(jwtMaker)
 
 	// Routes
 	routeV1.GET("/hello", handler.GetHelloMessage)
@@ -253,6 +284,12 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	commentRoute := routeV1.Group("/comments")
 	{
 		commentRoute.POST("/:id/replies", authMiddleware, forumHandler.CreateReply)
+	}
+	channelRoute := routeV1.Group("/channels")
+	{
+		channelRoute.GET("/me", authMiddleware, chatHandler.GetOwnChannels)
+		channelRoute.GET("/:id", authMiddleware, chatHandler.GetOrCreateChannel)
+		channelRoute.POST("/:id/messages", authMiddleware, chatHandler.SendMessage)
 	}
 
 	return router

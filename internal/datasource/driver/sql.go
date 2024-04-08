@@ -120,6 +120,8 @@ func (sql *sqlContext) autoMigrateUp() error {
 		&entity.Post{},
 		&entity.Comment{},
 		&entity.Reply{},
+		&entity.Channel{},
+		&entity.Message{},
 	); err != nil {
 		return err
 	}
