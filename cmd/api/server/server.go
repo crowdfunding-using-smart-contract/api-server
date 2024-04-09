@@ -116,6 +116,11 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 		log.Fatal().Err(err).Msg("Failed to create image uploader")
 	}
 
+	client, err := ethclient.Dial("http://127.0.0.1:9650/ext/bc/ijkQqqjBExi6i9UmHUdQGvo1sJxEr4EyHdcEcrvRWMoagCMAb/rpc")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to connect to the Avalanche network: %v", err)
+	}
+
 	// Repositories
 	transactionRepository := repository.NewTransactionRepository(datasource.GetSqlDB())
 	userRepository := repository.NewUserRepository(datasource.GetSqlDB())
@@ -185,6 +190,7 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 		UserUseCase:            userUseCase,
 		ProjectCategoryUseCase: projectCategoryUseCase,
 	})
+	projectContractHandler := handler.NewProjectContractHandler(client, "0x519f46ae0962abe5BF3516B225c3181914A3F735")
 	forumHandler := handler.NewForumHandler(&handler.ForumHandlerOptions{
 		ForumUseCase: forumUseCase,
 	})
@@ -241,6 +247,17 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
 		projectRoute.POST("/:id/ratings", authMiddleware, projectHandler.CreateProjectRating)
 		projectRoute.GET("/:id/ratings/verify", authMiddleware, projectHandler.VerifyProjectRating)
+	}
+	projectContractsRoute := routeV1.Group("/project-contracts")
+	{
+		projectContractsRoute.GET("/", projectContractHandler.GetAllCrowdfundingProjects)
+		projectContractsRoute.POST("/create", projectContractHandler.CreateCrowdfundingProject)   // authMiddleware
+		projectContractsRoute.POST("/:id/contribute", projectContractHandler.ContributeToProject) // authMiddleware
+		projectContractsRoute.POST("/:id/refund", projectContractHandler.RefundProject)           // authMiddleware
+		projectContractsRoute.DELETE("/:id", projectContractHandler.DeleteProjectContract)        // authMiddleware
+		projectContractsRoute.GET("/:id", projectContractHandler.GetProjectContractByID)
+		projectContractsRoute.GET("/user/:userId", projectContractHandler.GetUserProjectContracts) // authMiddleware
+		projectContractsRoute.PATCH("/:id", projectContractHandler.EditProjectContract)            // authMiddleware
 	}
 	postRoute := routeV1.Group("/posts")
 	{
