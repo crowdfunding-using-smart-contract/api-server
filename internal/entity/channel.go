@@ -17,8 +17,8 @@ type ChannelDto struct {
 // Secondary types
 
 type GetOwnChannelsResponse struct {
-	Receiver    UserDto    `json:"receiver"`
-	LastMessage MessageDto `json:"last_message"`
+	Receiver    UserDto     `json:"receiver"`
+	LastMessage *MessageDto `json:"last_message"`
 }
 
 type ChannelCreatePayload struct {

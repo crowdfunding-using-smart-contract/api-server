@@ -10,6 +10,7 @@ import (
 	"fund-o/api-server/pkg/mail"
 	"fund-o/api-server/pkg/uploader"
 	"github.com/redis/go-redis/v9"
+	"github.com/ulule/limiter/v3"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,6 +30,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	cors "github.com/rs/cors/wrapper/gin"
+	mgin "github.com/ulule/limiter/v3/drivers/middleware/gin"
+	sredis "github.com/ulule/limiter/v3/drivers/store/redis"
 
 	docs "fund-o/api-server/docs"
 
@@ -177,11 +180,14 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 		VerifyEmailUseCase: verifyEmailUseCase,
 	})
 
+	// Redis
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: config.RedisAddress,
+	})
+
 	// Websocket
 	hub := ws.NewWebsocketHub(&ws.Config{
-		Redis: redis.NewClient(&redis.Options{
-			Addr: config.RedisAddress,
-		}),
+		Redis: redisClient,
 	})
 	go hub.Run()
 	socketService := ws.NewSocketService(&ws.SocketServiceConfig{
@@ -229,6 +235,7 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 
 	router.Use(middleware.RequestLogger())
 	router.Use(middleware.ResponseLogger())
+	router.Use(registerRateLimiter(redisClient))
 
 	router.GET("/ws", authMiddleware, func(c *gin.Context) {
 		ws.ServeWs(hub, c)
@@ -314,6 +321,23 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 // @name Authorization
 func initSwaggerDocs(router *gin.RouterGroup) {
 	router.GET("/openapi/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+}
+
+func registerRateLimiter(redisClient *redis.Client) gin.HandlerFunc {
+	rate, err := limiter.NewRateFromFormatted("5-S")
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create rate limiter")
+	}
+
+	store, err := sredis.NewStoreWithOptions(redisClient, limiter.StoreOptions{
+		Prefix: "limiter_fundo",
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create rate limiter store")
+	}
+
+	rateLimitMiddleware := mgin.NewMiddleware(limiter.New(store, rate))
+	return rateLimitMiddleware
 }
 
 func runTaskProcessor(

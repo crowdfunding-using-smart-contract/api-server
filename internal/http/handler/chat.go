@@ -85,11 +85,19 @@ func (h *ChatHandler) GetOwnChannels(c *gin.Context) {
 		for _, m := range c.Members {
 			if m.ID != userID {
 				receiver = m
+				fmt.Println("Receiver: ", m)
 			}
 		}
-		response[i] = entity.GetOwnChannelsResponse{
-			Receiver:    receiver,
-			LastMessage: c.Messages[len(c.Messages)-1],
+		if len(c.Messages) == 0 {
+			response[i] = entity.GetOwnChannelsResponse{
+				Receiver:    receiver,
+				LastMessage: nil,
+			}
+		} else {
+			response[i] = entity.GetOwnChannelsResponse{
+				Receiver:    receiver,
+				LastMessage: &c.Messages[len(c.Messages)-1],
+			}
 		}
 	}
 
