@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"errors"
-	"fmt"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/apperrors"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 type ProjectUseCase interface {
@@ -71,39 +69,23 @@ func (uc *projectUseCase) CreateProject(project *entity.ProjectCreatePayload) (*
 		return nil, err
 	}
 
-	var launchDate = endDate
-	if project.LaunchDate != "" {
-		if launchDate, err = time.Parse(time.RFC3339, project.LaunchDate); err != nil {
-			fmt.Println("Error while parsing launch date: ", err)
-			return nil, err
-		}
-	}
-
-	targetFunding, err := decimal.NewFromString(project.TargetFunding)
-	if err != nil {
-		return nil, err
-	}
-
 	image, err := uc.imageUploader.Upload(uploader.ProjectImageFolder, project.Image)
 	if err != nil {
 		return nil, err
 	}
 
 	payload := &entity.Project{
-		Title:          project.Title,
-		SubTitle:       project.SubTitle,
-		CategoryID:     uuid.MustParse(project.CategoryID),
-		SubCategoryID:  uuid.MustParse(project.SubCategoryID),
-		Location:       project.Location,
-		Image:          image,
-		Description:    project.Description,
-		TargetFunding:  targetFunding,
-		MonetaryUnit:   project.MonetaryUnit,
-		StartDate:      time.Now(),
-		EndDate:        endDate,
-		LaunchDate:     launchDate,
-		CurrentFunding: decimal.NewFromInt(0),
-		OwnerID:        ownerID,
+		ProjectContractID: project.ProjectContractID,
+		Title:             project.Title,
+		SubTitle:          project.SubTitle,
+		Description:       project.Description,
+		CategoryID:        uuid.MustParse(project.CategoryID),
+		SubCategoryID:     uuid.MustParse(project.SubCategoryID),
+		Location:          project.Location,
+		Image:             image,
+		StartDate:         time.Now(),
+		EndDate:           endDate,
+		OwnerID:           ownerID,
 	}
 	newProject, err := uc.projectRepository.Create(payload)
 	if err != nil {
