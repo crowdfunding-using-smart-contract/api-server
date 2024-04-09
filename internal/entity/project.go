@@ -83,6 +83,12 @@ type ProjectListParams struct {
 	SubCategoryID string `form:"sub_category"`
 }
 
+type ProjectListOptions struct {
+	Query         string
+	CategoryID    uuid.UUID
+	SubCategoryID uuid.UUID
+}
+
 type ProjectCreatePayload struct {
 	ProjectContractID string                `form:"project_contract_id" binding:"required"`
 	Title             string                `form:"title" binding:"required"`

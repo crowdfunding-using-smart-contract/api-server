@@ -15,7 +15,7 @@ import (
 )
 
 type ProjectUseCase interface {
-	ListProjects(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ProjectDto]
+	ListProjects(params entity.ProjectListParams) pagination.PaginateResult[entity.ProjectDto]
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
 	GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
@@ -40,14 +40,28 @@ func NewProjectUseCase(options *ProjectUseCaseOptions) ProjectUseCase {
 	}
 }
 
-func (uc *projectUseCase) ListProjects(paginateOptions pagination.PaginateOptions) pagination.PaginateResult[entity.ProjectDto] {
+func (uc *projectUseCase) ListProjects(params entity.ProjectListParams) pagination.PaginateResult[entity.ProjectDto] {
 	result := pagination.MakePaginateResult(pagination.MakePaginateContextParameters[entity.ProjectDto]{
-		PaginateOptions: paginateOptions,
+		PaginateOptions: params.PaginateOptions,
 		CountDocuments: func() int64 {
 			return uc.projectRepository.Count()
 		},
 		FindDocuments: func(findOptions pagination.PaginateFindOptions) []entity.ProjectDto {
-			documents := uc.projectRepository.FindAll(findOptions)
+			parsedCategoryId, err := uuid.Parse(params.CategoryID)
+			if err != nil {
+				parsedCategoryId = uuid.Nil
+			}
+
+			parsedSubCategoryId, err := uuid.Parse(params.SubCategoryID)
+			if err != nil {
+				parsedSubCategoryId = uuid.Nil
+			}
+
+			documents := uc.projectRepository.FindAll(findOptions, entity.ProjectListOptions{
+				Query:         params.Query,
+				CategoryID:    parsedCategoryId,
+				SubCategoryID: parsedSubCategoryId,
+			})
 
 			projectDtos := make([]entity.ProjectDto, 0, len(documents))
 			for _, document := range documents {
@@ -114,7 +128,10 @@ func (uc *projectUseCase) GetProjectByID(projectID string) (*entity.ProjectDto, 
 }
 
 func (uc *projectUseCase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error) {
-	ownerID := uuid.MustParse(requestOwnerID)
+	ownerID, err := uuid.Parse(requestOwnerID)
+	if err != nil {
+		return nil, apperrors.ErrInvalidUserID
+	}
 
 	projects, err := uc.projectRepository.FindAllByOwnerID(ownerID)
 	if err != nil {

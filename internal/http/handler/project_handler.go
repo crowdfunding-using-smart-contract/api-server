@@ -5,7 +5,6 @@ import (
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/internal/usecase"
-	"fund-o/api-server/pkg/pagination"
 	"fund-o/api-server/pkg/token"
 	"net/http"
 
@@ -46,13 +45,13 @@ func NewProjectHandler(options *ProjectHandlerOptions) *ProjectHandler {
 // @response 500 {object} handler.ErrorResponse "Internal Server Error"
 // @router /projects [get]
 func (h *ProjectHandler) ListProjects(c *gin.Context) {
-	var paginateOptions pagination.PaginateOptions
-	if err := c.ShouldBindQuery(&paginateOptions); err != nil {
+	var params entity.ProjectListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
 		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error list forums: %v", err.Error())))
 		return
 	}
 
-	projects := h.projectUseCase.ListProjects(paginateOptions)
+	projects := h.projectUseCase.ListProjects(params)
 	c.JSON(makeHttpResponse(http.StatusOK, projects))
 }
 

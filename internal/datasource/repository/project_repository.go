@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"fmt"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/pkg/pagination"
 	"github.com/rs/zerolog"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -12,7 +14,7 @@ import (
 )
 
 type ProjectRepository interface {
-	FindAll(findOptions pagination.PaginateFindOptions) []entity.Project
+	FindAll(paginateOptions pagination.PaginateFindOptions, findOptions entity.ProjectListOptions) []entity.Project
 	Count() int64
 	Create(project *entity.Project) (*entity.Project, error)
 	FindByID(projectID uuid.UUID) (*entity.Project, error)
@@ -31,15 +33,25 @@ func NewProjectRepository(db *gorm.DB) ProjectRepository {
 	return &projectRepository{db, logger}
 }
 
-func (repo *projectRepository) FindAll(findOptions pagination.PaginateFindOptions) (projects []entity.Project) {
-	result := repo.db.
-		Limit(findOptions.Limit).
-		Offset(findOptions.Skip).
+func (repo *projectRepository) FindAll(paginateOptions pagination.PaginateFindOptions, findOptions entity.ProjectListOptions) (projects []entity.Project) {
+	query := repo.db.
+		Limit(paginateOptions.Limit).
+		Offset(paginateOptions.Skip).
+		Where("LOWER(title) LIKE ?", "%"+strings.ToLower(findOptions.Query)+"%").
 		Preload("Category").
 		Preload("SubCategory").
 		Preload("Owner").
-		Preload("Ratings").
-		Find(&projects)
+		Preload("Ratings")
+
+	if findOptions.CategoryID != uuid.Nil {
+		query = query.Where("category_id = ?", findOptions.CategoryID)
+	}
+
+	if findOptions.SubCategoryID != uuid.Nil {
+		query = query.Where("sub_category_id = ?", findOptions.SubCategoryID)
+	}
+
+	result := query.Find(&projects)
 	if result.Error != nil {
 		repo.logger.Error().Err(result.Error).Msg("failed to list projects")
 		return
@@ -102,6 +114,11 @@ func (repo *projectRepository) FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Pro
 	if result.Error != nil {
 		repo.logger.Error().Err(result.Error).Msg("failed to list projects")
 		return nil, result.Error
+	}
+
+	for _, project := range projects {
+		fmt.Println(ownerID)
+		fmt.Println("project owner: ", project.OwnerID)
 	}
 
 	return projects, nil
