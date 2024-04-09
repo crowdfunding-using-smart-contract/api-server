@@ -1,18 +1,18 @@
 package usecase
 
 import (
-	"fmt"
+	"errors"
 	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/pkg/apperrors"
 	"fund-o/api-server/pkg/password"
 	"fund-o/api-server/pkg/uploader"
-	"time"
-
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UserUseCase interface {
-	CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error)
+	CreateUser(user *entity.User) (*entity.UserDto, error)
 	AuthenticateUser(payload *entity.UserLoginPayload) (*entity.UserDto, error)
 	GetUserById(id string) (*entity.UserDto, error)
 	GetUserByEmail(email string) (*entity.UserDto, error)
@@ -36,34 +36,8 @@ func NewUserUseCase(options *UserUseCaseOptions) UserUseCase {
 	}
 }
 
-func (uc *userUseCase) CreateUser(user *entity.UserCreatePayload) (*entity.UserDto, error) {
-	if user.Password != user.PasswordConfirmation {
-		return nil, fmt.Errorf("password and password confirmation does not match")
-	}
-
-	hashedPassword, err := password.HashPassword(user.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	birthDate, err := time.Parse(time.RFC3339, user.BirthDate)
-	if err != nil {
-		return nil, err
-	}
-
-	payload := entity.User{
-		Email:          user.Email,
-		Firstname:      user.Firstname,
-		Lastname:       user.Lastname,
-		DisplayName:    fmt.Sprintf("%s %s", user.Firstname, user.Lastname),
-		HashedPassword: hashedPassword,
-		BirthDate:      birthDate,
-		Gender:         entity.ParseGender(user.Gender),
-	}
-
-	fmt.Println("payload", payload.Gender)
-
-	newUser, err := uc.userRepository.Create(&payload)
+func (uc *userUseCase) CreateUser(user *entity.User) (*entity.UserDto, error) {
+	newUser, err := uc.userRepository.Create(user)
 	if err != nil {
 		return nil, err
 	}
@@ -85,10 +59,17 @@ func (uc *userUseCase) AuthenticateUser(payload *entity.UserLoginPayload) (*enti
 }
 
 func (uc *userUseCase) GetUserById(id string) (*entity.UserDto, error) {
-	userID := uuid.MustParse(id)
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, apperrors.ErrInvalidUserID
+	}
 
 	user, err := uc.userRepository.FindById(userID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.ErrUserNotFound
+		}
+
 		return nil, err
 	}
 

@@ -1,30 +1,28 @@
-package tests
+package handler
 
 import (
 	"encoding/json"
 	"fmt"
+	mockRepository "fund-o/api-server/internal/datasource/repository/mock"
+	"fund-o/api-server/internal/entity"
+	"fund-o/api-server/internal/usecase"
+	"github.com/gin-gonic/gin"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
-
-	mockRepository "fund-o/api-server/internal/datasource/repository/mock"
-	"fund-o/api-server/internal/entity"
-	"fund-o/api-server/internal/http/handler"
-	"fund-o/api-server/internal/usecase"
-
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 )
 
 type TransactionSuite struct {
 	suite.Suite
 	repository *mockRepository.MockTransactionRepository
 	usecase    usecase.TransactionUseCase
-	handler    *handler.TransactionHandler
+	handler    *TransactionHandler
 }
 
 func (s *TransactionSuite) SetupTest() {
@@ -35,7 +33,7 @@ func (s *TransactionSuite) SetupTest() {
 	s.usecase = usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
 		TransactionRepository: s.repository,
 	})
-	s.handler = handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
+	s.handler = NewTransactionHandler(&TransactionHandlerOptions{
 		TransactionUseCase: s.usecase,
 	})
 }
@@ -68,7 +66,7 @@ func (s *TransactionSuite) TestGetTransactionAPI() {
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 
-				var response handler.ResultResponse[entity.TransactionDto]
+				var response ResultResponse[entity.TransactionDto]
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -88,7 +86,7 @@ func (s *TransactionSuite) TestGetTransactionAPI() {
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 
-				var response handler.ErrorResponse
+				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 
 				require.NoError(t, err)
@@ -104,12 +102,13 @@ func (s *TransactionSuite) TestGetTransactionAPI() {
 			tc.buildStubs(s.repository)
 
 			recorder := httptest.NewRecorder()
-			c, r := NewTestContext(t, recorder)
+			c, r := gin.CreateTestContext(recorder)
+
+			r.GET("/transactions/:id", s.handler.GetTransaction)
 
 			url := fmt.Sprintf("/transactions/%s", tc.refCode)
 			c.Request = httptest.NewRequest(http.MethodGet, url, nil)
 
-			r.GET("/transactions/:id", s.handler.GetTransaction)
 			r.ServeHTTP(recorder, c.Request)
 			tc.checkResponse(t, recorder)
 		})
@@ -143,7 +142,7 @@ func (s *TransactionSuite) TestCreateTransactionAPI() {
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusCreated, recorder.Code)
 
-				var response handler.ResultResponse[entity.TransactionDto]
+				var response ResultResponse[entity.TransactionDto]
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -162,7 +161,7 @@ func (s *TransactionSuite) TestCreateTransactionAPI() {
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 
-				var response handler.ErrorResponse
+				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -177,13 +176,15 @@ func (s *TransactionSuite) TestCreateTransactionAPI() {
 			tc.buildStubs(s.repository)
 
 			recorder := httptest.NewRecorder()
-			c, r := NewTestContext(t, recorder)
+			c, r := gin.CreateTestContext(recorder)
 
-			url := "/transactions"
 			payload, err := json.Marshal(tc.payload)
 			require.NoError(t, err)
+
 			reader := strings.NewReader(string(payload))
 			require.NoError(t, err)
+
+			url := "/transactions"
 			c.Request = httptest.NewRequest(http.MethodPost, url, reader)
 
 			r.POST("/transactions", s.handler.CreateTransaction)

@@ -53,7 +53,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-UserLoginResponse"
+                            "$ref": "#/definitions/ResultResponse-UserAuthenticateResponse"
                         }
                     },
                     "400": {
@@ -100,7 +100,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ResultResponse-User"
+                            "$ref": "#/definitions/ResultResponse-UserAuthenticateResponse"
                         }
                     },
                     "400": {
@@ -1520,11 +1520,11 @@ const docTemplate = `{
                 }
             }
         },
-        "ResultResponse-UserLoginResponse": {
+        "ResultResponse-UserAuthenticateResponse": {
             "type": "object",
             "properties": {
                 "result": {
-                    "$ref": "#/definitions/UserLoginResponse"
+                    "$ref": "#/definitions/UserAuthenticateResponse"
                 },
                 "status": {
                     "type": "string"
@@ -1662,6 +1662,29 @@ const docTemplate = `{
                 }
             }
         },
+        "UserAuthenticateResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "access_token_expired_at": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "refresh_token_expired_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
         "UserCreatePayload": {
             "type": "object",
             "required": [
@@ -1718,29 +1741,6 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "example": "@Password123"
-                }
-            }
-        },
-        "UserLoginResponse": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "access_token_expired_at": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "refresh_token_expired_at": {
-                    "type": "string"
-                },
-                "session_id": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/User"
                 }
             }
         },

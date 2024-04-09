@@ -1,17 +1,15 @@
 package config
 
 import (
-	"fund-o/api-server/cmd/api/server"
 	"fund-o/api-server/internal/datasource"
-
 	"github.com/spf13/viper"
 )
 
 type AppConfig struct {
-	APP_ENV   string `mapstructure:"APP_ENV"`
-	LOG_LEVEL bool   `mapstructure:"LOG_LEVEL"`
-	GIN_MODE  string `mapstructure:"GIN_MODE"`
-	server.ApiServerConfig
+	AppEnv   string `mapstructure:"APP_ENV"`
+	LogLevel string `mapstructure:"LOG_LEVEL"`
+	GinMode  string `mapstructure:"GIN_MODE"`
+	ApiServerConfig
 	datasource.DatasourceConfig
 }
 

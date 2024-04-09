@@ -5,7 +5,6 @@ import (
 	"fund-o/api-server/config"
 	"fund-o/api-server/internal/datasource"
 	"fund-o/api-server/pkg/logger"
-
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
@@ -22,9 +21,9 @@ func main() {
 
 	datasources := datasource.NewDatasourceContext(&appConfig.DatasourceConfig)
 
-	gin.SetMode(appConfig.GIN_MODE)
-	server := server.NewApiServer(&appConfig.ApiServerConfig, datasources)
-	if err := server.Start(); err != nil {
+	gin.SetMode(appConfig.GinMode)
+	s := server.NewApiServer(&appConfig.ApiServerConfig, datasources)
+	if err := s.Start(); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start API server")
 	}
 }

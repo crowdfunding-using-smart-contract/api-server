@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"fund-o/api-server/cmd/worker"
+	"fund-o/api-server/config"
 	"fund-o/api-server/pkg/mail"
 	"fund-o/api-server/pkg/uploader"
 	"net/http"
@@ -40,15 +41,15 @@ type ApiServer interface {
 
 type apiServer struct {
 	httpServer *http.Server
-	config     *ApiServerConfig
+	config     *config.ApiServerConfig
 	datasource datasource.Datasource
 }
 
-func NewApiServer(config *ApiServerConfig, datasource datasource.Datasource) ApiServer {
+func NewApiServer(config *config.ApiServerConfig, datasource datasource.Datasource) ApiServer {
 	router := inject(config, datasource)
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.APP_HOST, config.APP_PORT),
+		Addr:    fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Handler: router,
 	}
 
@@ -66,7 +67,7 @@ func (server *apiServer) HttpServer() *http.Server {
 func (server *apiServer) Start() error {
 	log.Info().Msg("Starting listening for HTTP requests...")
 	go func() {
-		log.Info().Msgf("Server listening at http://%s:%d", server.config.APP_HOST, server.config.APP_PORT)
+		log.Info().Msgf("Server listening at http://%s:%d", server.config.Host, server.config.Port)
 		log.Info().Msg("Starting listening for HTTP requests completed")
 		if err := server.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal().Err(err).Msg("Failed to listen and serve")
@@ -98,9 +99,9 @@ func (server *apiServer) Start() error {
 	return nil
 }
 
-func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engine {
+func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *gin.Engine {
 	// Makers
-	jwtMaker, err := token.NewJWTMaker(config.JWT_SECRET_KEY)
+	jwtMaker, err := token.NewJWTMaker(config.JwtSecretKey)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create JWT maker")
 	}
@@ -152,13 +153,13 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 
 	// Task Processor
 	redisOptions := asynq.RedisClientOpt{
-		Addr: config.REDIS_ADDRESS,
+		Addr: config.RedisAddress,
 	}
 	taskDistributor := worker.NewRedisTaskDistributor(redisOptions)
 	gmailOptions := mail.GmailSenderOptions{
-		Name:              config.EMAIL_SENDER_NAME,
-		FromEmailAddress:  config.EMAIL_SENDER_ADDRESS,
-		FromEmailPassword: config.EMAIL_SENDER_PASSWORD,
+		Name:              config.EmailSenderName,
+		FromEmailAddress:  config.EmailSenderAddress,
+		FromEmailPassword: config.EmailSenderPassword,
 	}
 	go runTaskProcessor(redisOptions, gmailOptions, &worker.TaskProcessorUseCaseOptions{
 		UserUseCase:        userUseCase,
@@ -191,8 +192,8 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	router := gin.New()
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{config.APP_CORS_ALLOWED_ORIGIN},
-		AllowCredentials: config.APP_CORS_ALLOWED_CREDENTIALS,
+		AllowedOrigins:   []string{config.CorsAllowedOrigin},
+		AllowCredentials: config.CorsAllowedCredentials,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 	})
 	router.Use(c)
@@ -200,9 +201,9 @@ func inject(config *ApiServerConfig, datasource datasource.Datasource) *gin.Engi
 	router.Use(middleware.RequestLogger())
 	router.Use(middleware.ResponseLogger())
 
-	routeV1 := router.Group(config.APP_PATH_PREFIX)
+	routeV1 := router.Group(config.PathPrefix)
 
-	docs.SwaggerInfo.BasePath = config.APP_PATH_PREFIX
+	docs.SwaggerInfo.BasePath = config.PathPrefix
 	initSwaggerDocs(routeV1)
 
 	authMiddleware := middleware.AuthMiddleware(jwtMaker)

@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/ava-labs/coreth v0.13.2
-	github.com/aws/aws-sdk-go v1.51.16
+	github.com/aws/aws-sdk-go v1.51.17
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/gin-gonic/gin v1.9.1

@@ -1,8 +1,7 @@
-package mail_test
+package mail
 
 import (
 	"fund-o/api-server/config"
-	"fund-o/api-server/pkg/mail"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,18 +20,16 @@ func (s *EmailSenderSuite) SetupTest() {
 }
 
 func (s *EmailSenderSuite) TestSendEmailWithGmail() {
-	gmailOpts := mail.GmailSenderOptions{
-		Name:              s.appConfig.EMAIL_SENDER_NAME,
-		FromEmailAddress:  s.appConfig.EMAIL_SENDER_ADDRESS,
-		FromEmailPassword: s.appConfig.EMAIL_SENDER_PASSWORD,
+	gmailOpts := GmailSenderOptions{
+		Name:              s.appConfig.EmailSenderName,
+		FromEmailAddress:  s.appConfig.EmailSenderAddress,
+		FromEmailPassword: s.appConfig.EmailSenderPassword,
 	}
-	sender := mail.NewGmailSender(&gmailOpts)
+
+	sender := NewGmailSender(&gmailOpts)
 
 	subject := "A test email"
-	content := `
-	<h1>Hello world</h1>
-	<p>This is a test message from <a href="https://bizzy.cool">DIZZY</a></p>
-	`
+	content := NewVerifyEmailTemplate("http://localhost:3000/verify")
 	to := []string{"test-2669dc@test.mailgenius.com"}
 
 	err := sender.SendEmail(subject, content, to, nil, nil)

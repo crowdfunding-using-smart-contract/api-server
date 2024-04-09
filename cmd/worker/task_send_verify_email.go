@@ -66,7 +66,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Contex
 
 	host := "http://localhost:3000/api/v1"
 	verifyUrl := fmt.Sprintf("%s/auth/verify-email?email_id=%s&secret_code=%s", host, verifyEmail.ID, verifyEmail.SecretCode)
-	content := mail.NewVerifyEmailTempate(verifyUrl)
+	content := mail.NewVerifyEmailTemplate(verifyUrl)
 	to := []string{user.Email}
 
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil)
