@@ -9,11 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 
-	"math/big"
-
-	"github.com/ava-labs/coreth/ethclient"
-	"github.com/ethereum/go-ethereum/common"
-
 	"fund-o/api-server/pkg/contracts/crowdfunding"
 )
 
