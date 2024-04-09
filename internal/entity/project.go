@@ -82,6 +82,20 @@ type ProjectCreatePayload struct {
 	OwnerID       string                `swaggerignore:"true"`
 }
 
+type ProjectCreatePayloadSolidity struct {
+	Title         string `form:"title" binding:"required"`
+	SubTitle      string `form:"sub_title" binding:"required"`
+	Description   string `form:"description"`
+	CategoryID    string `form:"category_id" binding:"required"`
+	SubCategoryID string `form:"sub_category_id" binding:"required"`
+	Location      string `form:"location" binding:"required"`
+	Image         string
+	TargetFunding string `form:"target_funding" binding:"required"`
+	MonetaryUnit  string `form:"monetary_unit"`
+	EndDate       uint64 `form:"end_date" binding:"required"`
+	LaunchDate    uint64 `form:"launch_date"`
+}
+
 type ProjectRatingCreatePayload struct {
 	Rating    float32 `json:"rating" binding:"required,gte=0,lte=5"`
 	ProjectID string  `json:"project_id" binding:"required" swaggerignore:"true"`
