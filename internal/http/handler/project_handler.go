@@ -144,6 +144,16 @@ func (h *ProjectHandler) GetOwnProjects(c *gin.Context) {
 	c.JSON(makeHttpResponse(http.StatusOK, projectDtos))
 }
 
+func (h *ProjectHandler) GetRecommendProjects(c *gin.Context) {
+	projects, err := h.projectUseCase.GetRecommendationProjects()
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get recommendation projects: %v", err.Error())))
+		return
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, projects))
+}
+
 // ListProjectCategories godoc
 // @summary List Project Categories
 // @description List project categories for selection

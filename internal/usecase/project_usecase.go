@@ -19,6 +19,7 @@ type ProjectUseCase interface {
 	CreateProject(project *entity.ProjectCreatePayload) (*entity.ProjectDto, error)
 	GetProjectByID(projectID string) (*entity.ProjectDto, apperrors.Error)
 	GetProjectsByOwnerID(requestOwnerID string) ([]entity.ProjectDto, error)
+	GetRecommendationProjects() ([]entity.ProjectDto, error)
 	CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error
 	IsRatedProject(userID string, projectID string) (bool, error)
 }
@@ -145,6 +146,21 @@ func (uc *projectUseCase) GetProjectsByOwnerID(requestOwnerID string) ([]entity.
 
 	return projectDtos, nil
 }
+
+func (uc *projectUseCase) GetRecommendationProjects() ([]entity.ProjectDto, error) {
+	projects, err := uc.projectRepository.FindRecommendation(3)
+	if err != nil {
+		return nil, err
+	}
+
+	projectDtos := make([]entity.ProjectDto, 0, len(projects))
+	for _, project := range projects {
+		projectDtos = append(projectDtos, *project.ToProjectDto())
+	}
+
+	return projectDtos, nil
+}
+
 func (uc *projectUseCase) CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error {
 	projectID, err := uuid.Parse(rating.ProjectID)
 	if err != nil {

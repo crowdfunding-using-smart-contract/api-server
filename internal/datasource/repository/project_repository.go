@@ -19,6 +19,7 @@ type ProjectRepository interface {
 	Create(project *entity.Project) (*entity.Project, error)
 	FindByID(projectID uuid.UUID) (*entity.Project, error)
 	FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Project, error)
+	FindRecommendation(count int) ([]entity.Project, error)
 	CreateProjectRating(rating *entity.ProjectRating) (*entity.ProjectRating, error)
 	FindProjectRating(userID uuid.UUID, projectID uuid.UUID) (*entity.ProjectRating, error)
 }
@@ -119,6 +120,28 @@ func (repo *projectRepository) FindAllByOwnerID(ownerID uuid.UUID) ([]entity.Pro
 	for _, project := range projects {
 		fmt.Println(ownerID)
 		fmt.Println("project owner: ", project.OwnerID)
+	}
+
+	return projects, nil
+}
+
+func (repo *projectRepository) FindRecommendation(count int) ([]entity.Project, error) {
+	var projects []entity.Project
+	result := repo.db.Table("projects").
+		Preload("Owner").
+		Preload("Category").
+		Preload("SubCategory").
+		Preload("Ratings").
+		Select("projects.*, AVG(project_ratings.rating) AS avg_rating").
+		Joins("LEFT JOIN project_ratings ON projects.id = project_ratings.project_id").
+		Group("projects.id").
+		Having("AVG(project_ratings.rating) > 0").
+		Order("avg_rating DESC").
+		Limit(count).
+		Find(&projects)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to find recommendation")
+		return nil, result.Error
 	}
 
 	return projects, nil
