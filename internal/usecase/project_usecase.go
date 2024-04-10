@@ -243,7 +243,7 @@ func (uc *projectUseCase) GetBackedProjects(userID string) ([]entity.ListBackedP
 		}
 
 		backedProjects = append(backedProjects, entity.ListBackedProjectResponse{
-			Projects:   *project.ToProjectDto(),
+			Project:    *project.ToProjectDto(),
 			FundAmount: projectFunding.TotalFunds,
 		})
 

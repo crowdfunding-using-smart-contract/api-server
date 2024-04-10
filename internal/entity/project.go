@@ -122,7 +122,7 @@ type ProjectBackerCreatePayload struct {
 }
 
 type ListBackedProjectResponse struct {
-	Projects   ProjectDto      `json:"projects"`
+	Project    ProjectDto      `json:"project"`
 	FundAmount decimal.Decimal `json:"fund_amount"`
 }
 
