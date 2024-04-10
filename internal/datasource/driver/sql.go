@@ -116,6 +116,7 @@ func (sql *sqlContext) autoMigrateUp() error {
 		&entity.ProjectCategory{},
 		&entity.ProjectSubCategory{},
 		&entity.ProjectRating{},
+		&entity.ProjectBacker{},
 		&entity.VerifyEmail{},
 		&entity.Post{},
 		&entity.Comment{},

@@ -7,6 +7,7 @@ import (
 	"fund-o/api-server/pkg/apperrors"
 	"fund-o/api-server/pkg/pagination"
 	"fund-o/api-server/pkg/uploader"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 	"net/http"
 	"time"
@@ -22,6 +23,8 @@ type ProjectUseCase interface {
 	GetRecommendationProjects() ([]entity.ProjectDto, error)
 	CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error
 	IsRatedProject(userID string, projectID string) (bool, error)
+	CreateBackProject(userID string, payload *entity.ProjectBackerCreatePayload) error
+	GetBackedProjects(userID string) ([]entity.ProjectBacker, error)
 }
 
 type projectUseCase struct {
@@ -201,4 +204,41 @@ func (uc *projectUseCase) IsRatedProject(userID string, projectID string) (bool,
 	}
 
 	return false, nil
+}
+
+func (uc *projectUseCase) CreateBackProject(userID string, payload *entity.ProjectBackerCreatePayload) error {
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return apperrors.ErrInvalidUserID
+	}
+
+	parsedProjectID, err := uuid.Parse(payload.ProjectID)
+	if err != nil {
+		return apperrors.ErrInvalidProjectID
+	}
+
+	_, err = uc.projectRepository.CreateProjectBacker(&entity.ProjectBacker{
+		ProjectID: parsedProjectID,
+		UserID:    parsedUserID,
+		Amount:    decimal.NewFromFloat(payload.Amount),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *projectUseCase) GetBackedProjects(userID string) ([]entity.ProjectBacker, error) {
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, apperrors.ErrInvalidUserID
+	}
+
+	backers, err := uc.projectRepository.FindBackProjectsByUserID(parsedUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return backers, nil
 }

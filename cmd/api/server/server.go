@@ -280,6 +280,8 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 		projectRoute.GET("/categories", projectHandler.ListProjectCategories)
 		projectRoute.POST("/:id/ratings", authMiddleware, projectHandler.CreateProjectRating)
 		projectRoute.GET("/:id/ratings/verify", authMiddleware, projectHandler.VerifyProjectRating)
+		projectRoute.POST("/:id/contribute", authMiddleware, projectHandler.ContributeProject)
+		projectRoute.GET("/backed", authMiddleware, projectHandler.GetBackedProject)
 	}
 	postRoute := routeV1.Group("/posts")
 	{

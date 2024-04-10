@@ -6,6 +6,7 @@ import (
 	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/pkg/token"
+	"github.com/shopspring/decimal"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -232,4 +233,55 @@ func (h *ProjectHandler) VerifyProjectRating(c *gin.Context) {
 	}
 
 	c.JSON(makeHttpResponse(http.StatusOK, rated))
+}
+
+func (h *ProjectHandler) ContributeProject(c *gin.Context) {
+	projectID := c.Param("id")
+	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+	var req entity.ProjectBackerCreatePayload
+	req.ProjectID = projectID
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, fmt.Sprintf("error create project rating: %v", err.Error())))
+		return
+	}
+
+	err := h.projectUseCase.CreateBackProject(userID, &req)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error create project rating: %v", err.Error())))
+		return
+	}
+
+	c.JSON(makeHttpMessageResponse(http.StatusCreated, "user backed project successfully"))
+}
+
+type GetBackedProjectResponse struct {
+	Funded  decimal.Decimal   `json:"funded"`
+	Project entity.ProjectDto `json:"project"`
+}
+
+func (h *ProjectHandler) GetBackedProject(c *gin.Context) {
+	userID := c.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID
+
+	backers, err := h.projectUseCase.GetBackedProjects(userID)
+	if err != nil {
+		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get project backer: %v", err.Error())))
+		return
+	}
+
+	var response GetBackedProjectResponse
+
+	for _, backer := range backers {
+		project, err := h.projectUseCase.GetProjectByID(backer.ProjectID.String())
+		if err != nil {
+			c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get project backer: %v", err.Error())))
+			return
+		}
+
+		response.Funded = response.Funded.Add(backer.Amount)
+		response.Project = *project
+	}
+
+	c.JSON(makeHttpResponse(http.StatusOK, response))
 }

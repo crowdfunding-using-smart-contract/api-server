@@ -74,6 +74,13 @@ type ProjectRating struct {
 	UserID    uuid.UUID
 } // @name ProjectRating
 
+type ProjectBacker struct {
+	Base
+	ProjectID uuid.UUID
+	UserID    uuid.UUID
+	Amount    decimal.Decimal `gorm:"type:decimal(32,16)"`
+}
+
 // Secondary types
 
 type ProjectListParams struct {
@@ -106,6 +113,11 @@ type ProjectRatingCreatePayload struct {
 	Rating    float32 `json:"rating" binding:"required,gte=0,lte=5"`
 	ProjectID string  `json:"project_id" binding:"required" swaggerignore:"true"`
 	UserID    string  `swaggerignore:"true"`
+}
+
+type ProjectBackerCreatePayload struct {
+	ProjectID string  `json:"project_id" binding:"required"`
+	Amount    float64 `json:"amount" binding:"required"`
 }
 
 // Parse functions

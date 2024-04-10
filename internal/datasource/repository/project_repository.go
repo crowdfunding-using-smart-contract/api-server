@@ -22,6 +22,10 @@ type ProjectRepository interface {
 	FindRecommendation(count int) ([]entity.Project, error)
 	CreateProjectRating(rating *entity.ProjectRating) (*entity.ProjectRating, error)
 	FindProjectRating(userID uuid.UUID, projectID uuid.UUID) (*entity.ProjectRating, error)
+	GetProjectBacker(userID, projectID uuid.UUID) (entity.ProjectBacker, error)
+	CreateProjectBacker(backer *entity.ProjectBacker) (*entity.ProjectBacker, error)
+	UpdateProjectBacker(backer *entity.ProjectBacker) (*entity.ProjectBacker, error)
+	FindBackProjectsByUserID(userID uuid.UUID) ([]entity.ProjectBacker, error)
 }
 
 type projectRepository struct {
@@ -170,4 +174,56 @@ func (repo *projectRepository) FindProjectRating(userID uuid.UUID, projectID uui
 	}
 
 	return &rating, nil
+}
+
+func (repo *projectRepository) GetProjectBacker(userID, projectID uuid.UUID) (entity.ProjectBacker, error) {
+	var backer entity.ProjectBacker
+	result := repo.db.
+		Where("project_id = ? AND user_id = ?", projectID, userID).
+		First(&backer)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to find project backer")
+		return backer, result.Error
+	}
+
+	return backer, nil
+}
+
+func (repo *projectRepository) CreateProjectBacker(backer *entity.ProjectBacker) (*entity.ProjectBacker, error) {
+	result := repo.db.
+		Create(&backer).
+		First(&backer)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to create project backer")
+		return nil, result.Error
+	}
+
+	return backer, nil
+}
+
+func (repo *projectRepository) UpdateProjectBacker(backer *entity.ProjectBacker) (*entity.ProjectBacker, error) {
+	result := repo.db.
+		Save(&backer).
+		First(&backer)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to update project backer")
+		return nil, result.Error
+	}
+
+	return backer, nil
+}
+
+func (repo *projectRepository) FindBackProjectsByUserID(userID uuid.UUID) ([]entity.ProjectBacker, error) {
+	var backers []entity.ProjectBacker
+	result := repo.db.
+		Table("project_backers").
+		Select("*").
+		Where("project_backers.user_id = ?", userID).
+		Find(&backers)
+	if result.Error != nil {
+		repo.logger.Error().Err(result.Error).Msg("failed to find back projects by user id")
+		return nil, result.Error
+	}
+
+	return backers, nil
 }
