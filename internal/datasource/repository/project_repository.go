@@ -25,7 +25,7 @@ type ProjectRepository interface {
 	GetProjectBacker(userID, projectID uuid.UUID) (entity.ProjectBacker, error)
 	CreateProjectBacker(backer *entity.ProjectBacker) (*entity.ProjectBacker, error)
 	UpdateProjectBacker(backer *entity.ProjectBacker) (*entity.ProjectBacker, error)
-	FindBackProjectsByUserID(userID uuid.UUID) ([]entity.ProjectBacker, error)
+	FindBackProjectsByUserID(userID string) ([]entity.ProjectFunding, error)
 }
 
 type projectRepository struct {
@@ -213,17 +213,36 @@ func (repo *projectRepository) UpdateProjectBacker(backer *entity.ProjectBacker)
 	return backer, nil
 }
 
-func (repo *projectRepository) FindBackProjectsByUserID(userID uuid.UUID) ([]entity.ProjectBacker, error) {
-	var backers []entity.ProjectBacker
-	result := repo.db.
-		Table("project_backers").
-		Select("*").
-		Where("project_backers.user_id = ?", userID).
-		Find(&backers)
+func (repo *projectRepository) FindBackProjectsByUserID(userID string) ([]entity.ProjectFunding, error) {
+	var projectFundings []entity.ProjectFunding
+
+	// Execute raw SQL query to calculate the sum of the amount funded for each project by the user
+	result := repo.db.Raw(`
+        SELECT projects.id as project_id, SUM(project_backers.amount) as total_funds
+        FROM projects
+        JOIN project_backers ON projects.id = project_backers.project_id
+        WHERE project_backers.user_id = ?
+        GROUP BY projects.id
+    `, userID).Scan(&projectFundings)
 	if result.Error != nil {
 		repo.logger.Error().Err(result.Error).Msg("failed to find back projects by user id")
 		return nil, result.Error
 	}
 
-	return backers, nil
+	return projectFundings, nil
+	//var projects []entity.ListBackedProjectResponse
+	//
+	//result := repo.db.
+	//	Table("projects").
+	//	Preload("Owner").
+	//	Preload("Category").
+	//	Preload("SubCategory").
+	//	Preload("Ratings").
+	//	Joins("JOIN project_backers ON projects.id = project_backers.project_id").
+	//	Where("project_backers.user_id = ?", userID).
+	//	Find(&projects)
+	//if result.Error != nil {
+	//	repo.logger.Error().Err(result.Error).Msg("failed to find back projects by user id")
+	//	return nil, result.Error
+	//}
 }

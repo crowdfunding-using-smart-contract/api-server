@@ -24,7 +24,7 @@ type ProjectUseCase interface {
 	CreateProjectRating(rating *entity.ProjectRatingCreatePayload) error
 	IsRatedProject(userID string, projectID string) (bool, error)
 	CreateBackProject(userID string, payload *entity.ProjectBackerCreatePayload) error
-	GetBackedProjects(userID string) ([]entity.ProjectBacker, error)
+	GetBackedProjects(userID string) ([]entity.ListBackedProjectResponse, error)
 }
 
 type projectUseCase struct {
@@ -229,16 +229,25 @@ func (uc *projectUseCase) CreateBackProject(userID string, payload *entity.Proje
 	return nil
 }
 
-func (uc *projectUseCase) GetBackedProjects(userID string) ([]entity.ProjectBacker, error) {
-	parsedUserID, err := uuid.Parse(userID)
-	if err != nil {
-		return nil, apperrors.ErrInvalidUserID
-	}
-
-	backers, err := uc.projectRepository.FindBackProjectsByUserID(parsedUserID)
+func (uc *projectUseCase) GetBackedProjects(userID string) ([]entity.ListBackedProjectResponse, error) {
+	projectFundings, err := uc.projectRepository.FindBackProjectsByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return backers, nil
+	backedProjects := make([]entity.ListBackedProjectResponse, 0, len(projectFundings))
+	for _, projectFunding := range projectFundings {
+		project, err := uc.projectRepository.FindByID(projectFunding.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+
+		backedProjects = append(backedProjects, entity.ListBackedProjectResponse{
+			Projects:   *project.ToProjectDto(),
+			FundAmount: projectFunding.TotalFunds,
+		})
+
+	}
+
+	return backedProjects, nil
 }

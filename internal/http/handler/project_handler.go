@@ -270,18 +270,5 @@ func (h *ProjectHandler) GetBackedProject(c *gin.Context) {
 		return
 	}
 
-	var response GetBackedProjectResponse
-
-	for _, backer := range backers {
-		project, err := h.projectUseCase.GetProjectByID(backer.ProjectID.String())
-		if err != nil {
-			c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error get project backer: %v", err.Error())))
-			return
-		}
-
-		response.Funded = response.Funded.Add(backer.Amount)
-		response.Project = *project
-	}
-
-	c.JSON(makeHttpResponse(http.StatusOK, response))
+	c.JSON(makeHttpResponse(http.StatusOK, backers))
 }

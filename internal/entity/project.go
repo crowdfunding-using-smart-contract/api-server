@@ -44,6 +44,7 @@ type Project struct {
 	Location          string             `gorm:"not null"`
 	Image             string
 	Ratings           []ProjectRating
+	Backers           []ProjectBacker
 	StartDate         time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	EndDate           time.Time `gorm:"not null"`
 	OwnerID           uuid.UUID `gorm:"not null"`
@@ -118,6 +119,16 @@ type ProjectRatingCreatePayload struct {
 type ProjectBackerCreatePayload struct {
 	ProjectID string  `json:"project_id" binding:"required"`
 	Amount    float64 `json:"amount" binding:"required"`
+}
+
+type ListBackedProjectResponse struct {
+	Projects   ProjectDto      `json:"projects"`
+	FundAmount decimal.Decimal `json:"fund_amount"`
+}
+
+type ProjectFunding struct {
+	ProjectID  uuid.UUID
+	TotalFunds decimal.Decimal
 }
 
 // Parse functions
