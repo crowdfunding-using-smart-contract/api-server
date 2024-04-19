@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"fund-o/api-server/internal/entity"
-	"fund-o/api-server/pkg/helper"
 	"fund-o/api-server/pkg/mail"
+	"fund-o/api-server/pkg/random"
 
 	"github.com/hibiken/asynq"
 )
@@ -55,7 +55,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(_ context.Contex
 
 	verifyEmail, err := processor.useCases.VerifyEmailUseCase.CreateVerifyEmail(&entity.VerifyEmailCreatePayload{
 		Email:      user.Email,
-		SecretCode: helper.RandomString(32),
+		SecretCode: random.NewString(32),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create verify email: %w", err)
