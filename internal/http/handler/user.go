@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fund-o/api-server/internal/entity"
-	_ "fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/http/middleware"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/pkg/apperrors"

@@ -11,7 +11,6 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/hibiken/asynq v0.24.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
-	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/rs/cors/wrapper/gin v0.0.0-20240228164225-8d33ca4794ea
 	github.com/rs/zerolog v1.32.0
