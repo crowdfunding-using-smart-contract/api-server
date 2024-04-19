@@ -1,6 +1,10 @@
 name: Test and coverage
 
 on: [push, pull_request]
+env:
+  email_sender_name: ${{ vars.EMAIL_SENDER_NAME }}
+  email_sender_address: ${{ vars.EMAIL_SENDER_ADDRESS }}
+  email_sender_password: ${{ vars.EMAIL_SENDER_PASSWORD }}
 
 jobs:
   test-and-coverage:
@@ -21,6 +25,13 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
           cache: false
+
+      - name: Create .env file
+        run: |
+          touch .env
+          echo "ApiServerConfig.EMAIL_SENDER_NAME=$email_sender_name" >> .env
+          echo "ApiServerConfig.EMAIL_SENDER_ADDRESS=$email_sender_address" >> .env
+          echo "ApiServerConfig.EMAIL_SENDER_PASSWORD=$email_sender_password" >> .env
 
       - name: Run coverage
         run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
