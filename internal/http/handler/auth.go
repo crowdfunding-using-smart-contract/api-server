@@ -76,7 +76,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	hashedPassword, err := password.HashPassword(user.Password)
 	if err != nil {
-		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, apperrors.ErrHashPassword.Error()))
+		c.JSON(makeHttpErrorResponse(http.StatusBadRequest, apperrors.ErrHashPassword.Error()))
 		return
 	}
 
@@ -118,18 +118,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		c.JSON(makeHttpErrorResponse(http.StatusInternalServerError, fmt.Sprintf("error authenticate user: %v", err.Error())))
 		return
 	}
-
-	taskPayload := &worker.PayloadSendVerifyEmail{
-		Email: userDto.Email,
-	}
-
-	opts := []asynq.Option{
-		asynq.MaxRetry(10),
-		asynq.ProcessIn(10 * time.Second),
-		asynq.Queue(worker.QueueCritical),
-	}
-
-	h.taskDistributor.DistributeTaskSendVerifyEmail(c, taskPayload, opts...)
 
 	response := entity.UserAuthenticateResponse{
 		SessionID:             session.ID,

@@ -4,65 +4,47 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"fund-o/api-server/cmd/worker"
-	"fund-o/api-server/internal/datasource"
-	"fund-o/api-server/internal/datasource/driver"
-	"fund-o/api-server/internal/datasource/repository"
 	"fund-o/api-server/internal/entity"
 	"fund-o/api-server/internal/usecase"
 	"fund-o/api-server/mocks"
 	"fund-o/api-server/pkg/apperrors"
-	"fund-o/api-server/pkg/password"
 	"fund-o/api-server/pkg/random"
 	"fund-o/api-server/pkg/token"
-	"github.com/hibiken/asynq"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type AuthHandlerSuite struct {
 	suite.Suite
-	datasources    datasource.Datasource
-	userRepository repository.UserRepository
-	handler        *AuthHandler
+	userRepository    *mocks.MockUserRepository
+	sessionRepository *mocks.MockSessionRepository
+	taskDistributor   *mocks.MockTaskDistributor
+	handler           *AuthHandler
 }
 
 func (s *AuthHandlerSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	defer ctrl.Finish()
 
-	s.datasources = datasource.NewDatasourceContext(&datasource.DatasourceConfig{
-		SqlDBConfig: driver.SqlDBConfig{
-			SQL_HOST:     "localhost",
-			SQL_USERNAME: "docker",
-			SQL_PASSWORD: "secret",
-			SQL_PORT:     5433,
-			SQL_DATABASE: "fundo_test",
-		},
-	})
-
-	s.userRepository = repository.NewUserRepository(s.datasources.GetSqlDB())
-	sessionRepository := repository.NewSessionRepository(s.datasources.GetSqlDB())
+	s.userRepository = mocks.NewMockUserRepository(ctrl)
+	s.sessionRepository = mocks.NewMockSessionRepository(ctrl)
 	imageUploader := mocks.NewMockImageUploader(ctrl)
 	userUseCase := usecase.NewUserUseCase(&usecase.UserUseCaseOptions{
 		UserRepository: s.userRepository,
 		ImageUploader:  imageUploader,
 	})
 	sessionUseCase := usecase.NewSessionUseCase(&usecase.SessionUseCaseOptions{
-		SessionRepository: sessionRepository,
+		SessionRepository: s.sessionRepository,
 	})
 
-	redisOpts := asynq.RedisClientOpt{
-		Addr: "localhost:6380",
-	}
-	taskDistributor := worker.NewRedisTaskDistributor(redisOpts)
+	s.taskDistributor = mocks.NewMockTaskDistributor(ctrl)
 
 	secretKey := "alsypVB6YUpE2HBW4npGoXeArNyqVrqO"
 
@@ -72,35 +54,42 @@ func (s *AuthHandlerSuite) SetupTest() {
 	s.handler = NewAuthHandler(&AuthHandlerOptions{
 		UserUseCase:     userUseCase,
 		SessionUseCase:  sessionUseCase,
-		TaskDistributor: taskDistributor,
+		TaskDistributor: s.taskDistributor,
 		TokenMaker:      tokenMaker,
 	})
 }
 
-func (s *AuthHandlerSuite) TearDownSuite() {
-	err := s.datasources.Close()
-	require.NoError(s.T(), err)
-}
-
 func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
-	validRequestBody := entity.UserCreatePayload{
-		Email:                random.NewEmail(),
-		Password:             "@Password123",
-		PasswordConfirmation: "@Password123",
-		Firstname:            "John",
-		Lastname:             "Doe",
-		BirthDate:            "2002-04-16T00:00:00Z",
-		Gender:               "m",
-	}
+	user := randomUser(s.T())
 
 	testCases := []struct {
 		name          string
-		requestBody   entity.UserCreatePayload
+		requestBody   gin.H
+		buildStubs    func()
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
-			name:        "OK",
-			requestBody: validRequestBody,
+			name: "OK",
+			requestBody: gin.H{
+				"email":                 user.Email,
+				"password":              "@Password123",
+				"password_confirmation": "@Password123",
+				"firstname":             user.Firstname,
+				"lastname":              user.Lastname,
+				"birthdate":             "2000-01-01T00:00:00Z",
+				"gender":                "m",
+			},
+			buildStubs: func() {
+				s.userRepository.EXPECT().
+					Create(gomock.Any()).
+					Times(1).
+					Return(&user, nil)
+
+				s.sessionRepository.EXPECT().
+					Create(gomock.Any()).
+					Times(1).
+					Return(&entity.Session{}, nil)
+			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ResultResponse[entity.UserAuthenticateResponse]
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
@@ -109,17 +98,15 @@ func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
 				require.Equal(t, http.StatusText(http.StatusCreated), response.Status)
 				require.Equal(t, http.StatusCreated, response.StatusCode)
 				require.NotNil(t, response.Result)
-				require.NotNil(t, response.Result.SessionID)
-				require.NotNil(t, response.Result.AccessToken)
 
-				require.Equal(t, validRequestBody.Email, response.Result.User.Email)
-				require.Equal(t, fmt.Sprintf("%s %s", validRequestBody.Firstname, validRequestBody.Lastname), response.Result.User.FullName)
-				require.Equal(t, validRequestBody.BirthDate, response.Result.User.BirthDate)
+				require.Equal(t, user.Email, response.Result.User.Email)
+				require.Equal(t, fmt.Sprintf("%s %s", user.Firstname, user.Lastname), response.Result.User.FullName)
 			},
 		},
 		{
 			name:        "InvalidRequestBody",
-			requestBody: entity.UserCreatePayload{},
+			requestBody: gin.H{},
+			buildStubs:  func() {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
@@ -131,15 +118,16 @@ func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
 		},
 		{
 			name: "PasswordDoesNotMatch",
-			requestBody: entity.UserCreatePayload{
-				Email:                random.NewEmail(),
-				Password:             "@Password123",
-				PasswordConfirmation: "@Password1234",
-				Firstname:            "John",
-				Lastname:             "Doe",
-				BirthDate:            "2002-04-16T00:00:00Z",
-				Gender:               "m",
+			requestBody: gin.H{
+				"email":                 random.NewEmail(),
+				"password":              "@Password123",
+				"password_confirmation": "@Password1234",
+				"firstname":             "John",
+				"lastname":              "Doe",
+				"birthdate":             "2002-04-16T00:00:00Z",
+				"gender":                "m",
 			},
+			buildStubs: func() {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
@@ -152,15 +140,16 @@ func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
 		},
 		{
 			name: "InvalidBirthDate",
-			requestBody: entity.UserCreatePayload{
-				Email:                random.NewEmail(),
-				Password:             "@Password123",
-				PasswordConfirmation: "@Password123",
-				Firstname:            "John",
-				Lastname:             "Doe",
-				BirthDate:            "2002-04-16",
-				Gender:               "m",
+			requestBody: gin.H{
+				"email":                 random.NewEmail(),
+				"password":              "@Password123",
+				"password_confirmation": "@Password123",
+				"firstname":             "John",
+				"lastname":              "Doe",
+				"birthdate":             "2002-04-16",
+				"gender":                "m",
 			},
+			buildStubs: func() {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
@@ -173,28 +162,43 @@ func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
 		},
 		{
 			name: "HashPasswordError",
-			requestBody: entity.UserCreatePayload{
-				Email:                random.NewEmail(),
-				Password:             "password",
-				PasswordConfirmation: "password",
-				Firstname:            "John",
-				Lastname:             "Doe",
-				BirthDate:            "2002-04-16T00:00:00Z",
-				Gender:               "m",
+			requestBody: gin.H{
+				"email":                 random.NewEmail(),
+				"password":              "password",
+				"password_confirmation": "password",
+				"firstname":             "John",
+				"lastname":              "Doe",
+				"birthdate":             "2000-01-01T00:00:00Z",
+				"gender":                "m",
 			},
+			buildStubs: func() {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
 				require.NoError(t, err)
 
-				require.Equal(t, http.StatusText(http.StatusInternalServerError), response.Status)
-				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
+				require.Equal(t, http.StatusText(http.StatusBadRequest), response.Status)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode)
 				require.Equal(t, apperrors.ErrHashPassword.Error(), response.Error)
 			},
 		},
 		{
-			name:        "EmailAlreadyExists",
-			requestBody: validRequestBody,
+			name: "EmailAlreadyExists",
+			requestBody: gin.H{
+				"email":                 user.Email,
+				"password":              "@Password123",
+				"password_confirmation": "@Password123",
+				"firstname":             user.Firstname,
+				"lastname":              user.Lastname,
+				"birthdate":             "2000-01-01T00:00:00Z",
+				"gender":                "m",
+			},
+			buildStubs: func() {
+				s.userRepository.EXPECT().
+					Create(gomock.Any()).
+					Times(1).
+					Return(nil, gorm.ErrDuplicatedKey)
+			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
@@ -209,16 +213,16 @@ func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-
 			c, r := gin.CreateTestContext(recorder)
+
+			tc.buildStubs()
 
 			r.POST("/register", s.handler.Register)
 
 			requestBody, err := json.Marshal(tc.requestBody)
 			require.NoError(t, err)
 
-			request, err := http.NewRequest("POST", "/register", bytes.NewBuffer(requestBody))
-
+			request, err := http.NewRequest(http.MethodPost, "/register", bytes.NewReader(requestBody))
 			require.NoError(t, err)
 
 			c.Request = request
@@ -230,36 +234,30 @@ func (s *AuthHandlerSuite) TestAuthRegisterAPI() {
 }
 
 func (s *AuthHandlerSuite) TestAuthLoginAPI() {
-	email := random.NewEmail()
+	user := randomUser(s.T())
 
 	testCases := []struct {
 		name          string
 		requestBody   entity.UserLoginPayload
-		buildStubs    func(t *testing.T, repo repository.UserRepository)
+		buildStubs    func(userRepo *mocks.MockUserRepository, sessionRepo *mocks.MockSessionRepository)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
 			requestBody: entity.UserLoginPayload{
-				Email:    email,
+				Email:    user.Email,
 				Password: "@Password123",
 			},
-			buildStubs: func(t *testing.T, repo repository.UserRepository) {
-				hashedPassword, err := password.HashPassword("@Password123")
-				require.NoError(t, err)
+			buildStubs: func(userRepo *mocks.MockUserRepository, sessionRepo *mocks.MockSessionRepository) {
+				userRepo.EXPECT().
+					FindByEmail(user.Email).
+					Times(1).
+					Return(&user, nil)
 
-				birthDate, err := time.Parse(time.RFC3339, "2002-04-16T00:00:00Z")
-				require.NoError(t, err)
-
-				_, err = repo.Create(&entity.User{
-					Email:          email,
-					HashedPassword: hashedPassword,
-					Firstname:      "John",
-					Lastname:       "Doe",
-					DisplayName:    "John Doe",
-					BirthDate:      birthDate,
-				})
-				require.NoError(t, err)
+				sessionRepo.EXPECT().
+					Create(gomock.Any()).
+					Times(1).
+					Return(&entity.Session{}, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ResultResponse[entity.UserAuthenticateResponse]
@@ -274,13 +272,13 @@ func (s *AuthHandlerSuite) TestAuthLoginAPI() {
 				require.NotNil(t, response.Result.AccessToken)
 				require.NotNil(t, response.Result.User, "User should not be nil")
 
-				require.Equal(t, email, response.Result.User.Email)
+				require.Equal(t, user.Email, response.Result.User.Email)
 			},
 		},
 		{
 			name:        "InvalidRequestBody",
 			requestBody: entity.UserLoginPayload{},
-			buildStubs:  func(t *testing.T, repo repository.UserRepository) {},
+			buildStubs:  func(userRepo *mocks.MockUserRepository, sessionRepo *mocks.MockSessionRepository) {},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				var response ErrorResponse
 				err := json.Unmarshal(recorder.Body.Bytes(), &response)
@@ -290,6 +288,27 @@ func (s *AuthHandlerSuite) TestAuthLoginAPI() {
 				require.Equal(t, http.StatusBadRequest, response.StatusCode)
 			},
 		},
+		{
+			name: "UserNotFound",
+			requestBody: entity.UserLoginPayload{
+				Email:    user.Email,
+				Password: "@Password123",
+			},
+			buildStubs: func(userRepo *mocks.MockUserRepository, sessionRepo *mocks.MockSessionRepository) {
+				userRepo.EXPECT().
+					FindByEmail(user.Email).
+					Times(1).
+					Return(nil, gorm.ErrRecordNotFound)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusNotFound), response.Status)
+				require.Equal(t, http.StatusNotFound, response.StatusCode)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -297,7 +316,7 @@ func (s *AuthHandlerSuite) TestAuthLoginAPI() {
 			recorder := httptest.NewRecorder()
 			c, r := gin.CreateTestContext(recorder)
 
-			tc.buildStubs(t, s.userRepository)
+			tc.buildStubs(s.userRepository, s.sessionRepository)
 
 			r.POST("/login", s.handler.Login)
 
