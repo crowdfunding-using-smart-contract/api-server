@@ -10,15 +10,14 @@ import (
 	"fund-o/api-server/pkg/apperrors"
 	"fund-o/api-server/pkg/random"
 	"fund-o/api-server/pkg/token"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type AuthHandlerSuite struct {
@@ -324,6 +323,97 @@ func (s *AuthHandlerSuite) TestAuthLoginAPI() {
 			require.NoError(t, err)
 
 			request, err := http.NewRequest("POST", "/login", bytes.NewBuffer(requestBody))
+			require.NoError(t, err)
+
+			c.Request = request
+
+			r.ServeHTTP(recorder, c.Request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
+func (s *AuthHandlerSuite) TestSendVerifyEmailAPI() {
+	email := random.NewEmail()
+
+	testCases := []struct {
+		name          string
+		requestBody   gin.H
+		buildStubs    func()
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			requestBody: gin.H{
+				"email": email,
+			},
+			buildStubs: func() {
+				s.userRepository.EXPECT().
+					FindByEmail(email).
+					Times(1).
+					Return(&entity.User{}, nil)
+
+				s.taskDistributor.EXPECT().
+					DistributeTaskSendVerifyEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response MessageResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusOK), response.Status)
+				require.Equal(t, http.StatusOK, response.StatusCode)
+			},
+		},
+		{
+			name:        "InvalidRequestBody",
+			requestBody: gin.H{},
+			buildStubs:  func() {},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusBadRequest), response.Status)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode)
+			},
+		},
+		{
+			name: "UserNotFound",
+			requestBody: gin.H{
+				"email": email,
+			},
+			buildStubs: func() {
+				s.userRepository.EXPECT().
+					FindByEmail(email).
+					Times(1).
+					Return(nil, gorm.ErrRecordNotFound)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusBadRequest), response.Status)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			c, r := gin.CreateTestContext(recorder)
+
+			tc.buildStubs()
+
+			r.POST("/send-verify-email", s.handler.SendVerifyEmail)
+
+			requestBody, err := json.Marshal(tc.requestBody)
+			require.NoError(t, err)
+
+			request, err := http.NewRequest(http.MethodPost, "/send-verify-email", bytes.NewReader(requestBody))
 			require.NoError(t, err)
 
 			c.Request = request
