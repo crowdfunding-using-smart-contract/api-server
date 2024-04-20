@@ -12,11 +12,6 @@ type UserRole int
 type Gender int
 
 const (
-	Backer UserRole = iota + 1
-	Creator
-)
-
-const (
 	Male Gender = iota + 1
 	Female
 	NotSay
@@ -104,24 +99,6 @@ func (u *User) ToUserDto() *UserDto {
 
 func (g Gender) String() string {
 	return [...]string{"", "m", "f", "ns"}[g]
-}
-
-func (r UserRole) String() string {
-	return [...]string{"", "backer", "creator"}[r]
-}
-
-var ParseUserRole = func(str string) UserRole {
-	mapString := map[string]UserRole{
-		"backer":  Backer,
-		"creator": Creator,
-	}
-
-	role, ok := helper.ParseString[UserRole](mapString, str)
-	if !ok {
-		return Backer
-	}
-
-	return role
 }
 
 var ParseGender = func(str string) Gender {
