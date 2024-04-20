@@ -369,7 +369,227 @@ func (s *ForumTestSuite) TestCreatePostAPI() {
 			r.ServeHTTP(recorder, c.Request)
 			tc.checkResponse(t, recorder)
 		})
+	}
+}
 
+func (s *ForumTestSuite) TestCreateCommentAPI() {
+	user := randomUser(s.T())
+
+	testCases := []struct {
+		name          string
+		postID        string
+		payload       gin.H
+		buildStubs    func(repo *mocks.MockForumRepository)
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			postID: uuid.NewString(),
+			payload: gin.H{
+				"content": "Hello, Bro!",
+			},
+			buildStubs: func(repo *mocks.MockForumRepository) {
+				comment := entity.Comment{
+					Content:  "Hello, Bro!",
+					AuthorID: user.ID,
+				}
+				repo.EXPECT().
+					CreateComment(gomock.Any()).
+					Times(1).
+					Return(&comment, nil)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, s.tokenMaker, middleware.AuthorizationTypeBearer, user.ID.String(), 5*time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ResultResponse[entity.CommentDto]
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusCreated), response.Status)
+				require.Equal(t, http.StatusCreated, response.StatusCode)
+
+				require.NotNil(t, response.Result)
+				require.Equal(t, response.Result.Content, "Hello, Bro!")
+				require.Len(t, response.Result.Replies, 0)
+			},
+		},
+		{
+			name:       "Invalid Request Body",
+			postID:     uuid.NewString(),
+			payload:    gin.H{},
+			buildStubs: func(repo *mocks.MockForumRepository) {},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, s.tokenMaker, middleware.AuthorizationTypeBearer, user.ID.String(), 5*time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusBadRequest), response.Status)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode)
+			},
+		},
+		{
+			name:   "Internal Server Error",
+			postID: uuid.NewString(),
+			payload: gin.H{
+				"content": "Hello, Bro!",
+			},
+			buildStubs: func(repo *mocks.MockForumRepository) {
+				repo.EXPECT().
+					CreateComment(gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, s.tokenMaker, middleware.AuthorizationTypeBearer, user.ID.String(), 5*time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusInternalServerError), response.Status)
+				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			tc.buildStubs(s.forumRepository)
+
+			recorder := httptest.NewRecorder()
+			c, r := gin.CreateTestContext(recorder)
+
+			r.POST("/posts/:id/comments", middleware.AuthMiddleware(s.tokenMaker), s.handler.CreateComment)
+
+			requestBody, err := json.Marshal(tc.payload)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("/posts/%s/comments", tc.postID)
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(requestBody))
+			require.NoError(t, err)
+
+			c.Request = request
+
+			tc.setupAuth(t, c.Request, s.tokenMaker)
+			r.ServeHTTP(recorder, c.Request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
+func (s *ForumTestSuite) TestCreateReplyAPI() {
+	user := randomUser(s.T())
+
+	testCases := []struct {
+		name          string
+		commentID     string
+		payload       gin.H
+		buildStubs    func(repo *mocks.MockForumRepository)
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:      "OK",
+			commentID: uuid.NewString(),
+			payload: gin.H{
+				"content": "How are you?",
+			},
+			buildStubs: func(repo *mocks.MockForumRepository) {
+				reply := entity.Reply{
+					Content:  "How are you?",
+					AuthorID: user.ID,
+				}
+				repo.EXPECT().
+					CreateReply(gomock.Any()).
+					Times(1).
+					Return(&reply, nil)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, s.tokenMaker, middleware.AuthorizationTypeBearer, user.ID.String(), 5*time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ResultResponse[entity.ReplyDto]
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusCreated), response.Status)
+				require.Equal(t, http.StatusCreated, response.StatusCode)
+
+				require.NotNil(t, response.Result)
+				require.Equal(t, response.Result.Content, "How are you?")
+			},
+		},
+		{
+			name:       "Invalid Request Body",
+			commentID:  uuid.NewString(),
+			payload:    gin.H{},
+			buildStubs: func(repo *mocks.MockForumRepository) {},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, s.tokenMaker, middleware.AuthorizationTypeBearer, user.ID.String(), 5*time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusBadRequest), response.Status)
+				require.Equal(t, http.StatusBadRequest, response.StatusCode)
+			},
+		},
+		{
+			name:      "Internal Server Error",
+			commentID: uuid.NewString(),
+			payload: gin.H{
+				"content": "How are you?",
+			},
+			buildStubs: func(repo *mocks.MockForumRepository) {
+				repo.EXPECT().
+					CreateReply(gomock.Any()).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, s.tokenMaker, middleware.AuthorizationTypeBearer, user.ID.String(), 5*time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				var response ErrorResponse
+				err := json.Unmarshal(recorder.Body.Bytes(), &response)
+				require.NoError(t, err)
+
+				require.Equal(t, http.StatusText(http.StatusInternalServerError), response.Status)
+				require.Equal(t, http.StatusInternalServerError, response.StatusCode)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			tc.buildStubs(s.forumRepository)
+
+			recorder := httptest.NewRecorder()
+			c, r := gin.CreateTestContext(recorder)
+
+			r.POST("/comments/:id/replies", middleware.AuthMiddleware(s.tokenMaker), s.handler.CreateReply)
+
+			requestBody, err := json.Marshal(tc.payload)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("/comments/%s/replies", tc.commentID)
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(requestBody))
+			require.NoError(t, err)
+
+			c.Request = request
+
+			tc.setupAuth(t, c.Request, s.tokenMaker)
+			r.ServeHTTP(recorder, c.Request)
+			tc.checkResponse(t, recorder)
+		})
 	}
 }
 
