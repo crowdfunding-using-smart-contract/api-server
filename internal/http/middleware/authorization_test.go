@@ -105,6 +105,50 @@ func (s *MiddlewareSuite) TestAuthorizationMiddleware() {
 	}
 }
 
+func (s *MiddlewareSuite) TestAuthorizationMiddlewareInQueryString() {
+	userID := uuid.NewString()
+
+	testCases := []struct {
+		name          string
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				s.addAuthorizationInQueryParams(t, request, userID, time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			c, r := gin.CreateTestContext(recorder)
+
+			r.GET("/auth",
+				AuthMiddleware(s.tokenMaker),
+				func(c *gin.Context) {
+					c.JSON(http.StatusOK, gin.H{})
+				},
+			)
+
+			request, err := http.NewRequest(http.MethodGet, "/auth", nil)
+			require.NoError(t, err)
+
+			c.Request = request
+
+			tc.setupAuth(t, request, s.tokenMaker)
+			r.ServeHTTP(recorder, c.Request)
+
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
 func (s *MiddlewareSuite) addAuthorization(
 	t *testing.T,
 	request *http.Request,
@@ -118,6 +162,21 @@ func (s *MiddlewareSuite) addAuthorization(
 
 	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, token)
 	request.Header.Set(AuthorizationHeaderKey, authorizationHeader)
+}
+
+func (s *MiddlewareSuite) addAuthorizationInQueryParams(
+	t *testing.T,
+	request *http.Request,
+	userID string,
+	duration time.Duration,
+) {
+	token, payload, err := s.tokenMaker.CreateToken(userID, duration)
+	require.NoError(t, err)
+	require.NotEmpty(t, payload)
+
+	query := request.URL.Query()
+	query.Add("token", token)
+	request.URL.RawQuery = query.Encode()
 }
 
 func TestMiddlewareSuite(t *testing.T) {
