@@ -122,7 +122,6 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	}
 
 	// Repositories
-	transactionRepository := repository.NewTransactionRepository(datasource.GetSqlDB())
 	userRepository := repository.NewUserRepository(datasource.GetSqlDB())
 	sessionRepository := repository.NewSessionRepository(datasource.GetSqlDB())
 	projectRepository := repository.NewProjectRepository(datasource.GetSqlDB())
@@ -133,9 +132,6 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	messageRepository := repository.NewMessageRepository(datasource.GetSqlDB())
 
 	// UseCases
-	transactionUseCase := usecase.NewTransactionUseCase(&usecase.TransactionUseCaseOptions{
-		TransactionRepository: transactionRepository,
-	})
 	userUseCase := usecase.NewUserUseCase(&usecase.UserUseCaseOptions{
 		UserRepository: userRepository,
 		ImageUploader:  imageUploader,
@@ -195,9 +191,6 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	})
 
 	// Handlers
-	transactionHandler := handler.NewTransactionHandler(&handler.TransactionHandlerOptions{
-		TransactionUseCase: transactionUseCase,
-	})
 	authHandler := handler.NewAuthHandler(&handler.AuthHandlerOptions{
 		UserUseCase:        userUseCase,
 		SessionUseCase:     sessionUseCase,
@@ -247,13 +240,6 @@ func inject(config *config.ApiServerConfig, datasource datasource.Datasource) *g
 	initSwaggerDocs(routeV1)
 
 	// Routes
-	routeV1.GET("/hello", handler.GetHelloMessage)
-	transactionRoute := routeV1.Group("/transactions")
-	{
-		transactionRoute.GET("", transactionHandler.ListTransactions)
-		transactionRoute.GET("/:id", transactionHandler.GetTransaction)
-		transactionRoute.POST("", transactionHandler.CreateTransaction)
-	}
 	authRoute := routeV1.Group("/auth")
 	{
 		authRoute.POST("/register", authHandler.Register)

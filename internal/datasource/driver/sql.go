@@ -109,7 +109,6 @@ func (sql *sqlContext) DB() *gorm.DB {
 func (sql *sqlContext) autoMigrateUp() error {
 	db := sql.db
 	if err := db.AutoMigrate(
-		&entity.Transaction{},
 		&entity.User{},
 		&entity.Session{},
 		&entity.Project{},
